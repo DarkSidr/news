@@ -1,11 +1,14 @@
 <script lang="ts">
   import type { NewsItem } from '$lib/types';
   import { formatDistanceToNow } from 'date-fns';
+  import { ru } from 'date-fns/locale';
   import { ExternalLink } from 'lucide-svelte';
 
   let { news } = $props<{ news: NewsItem }>();
 
-  let timeAgo = $derived(formatDistanceToNow(new Date(news.pubDate), { addSuffix: true }));
+  let timeAgo = $derived(
+    formatDistanceToNow(new Date(news.pubDate), { addSuffix: true, locale: ru })
+  );
 </script>
 
 <article class="break-inside-avoid mb-4 transition-all hover:-translate-y-1 hover:shadow-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden flex flex-col h-auto backdrop-blur-sm dark:bg-opacity-80">
@@ -22,17 +25,12 @@
     <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 leading-tight">
       <a href={news.link} target="_blank" rel="noopener noreferrer" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
         {news.title}
+        <ExternalLink size={14} class="inline-block ml-1 opacity-70" aria-hidden="true" />
       </a>
     </h3>
 
-    <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
-      {news.contentSnippet}
-    </p>
-
-    <div class="mt-auto pt-2 flex items-center justify-end">
-       <a href={news.link} target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors" aria-label="Open link">
-          <ExternalLink size={16} />
-       </a>
+    <div class="prose prose-sm dark:prose-invert max-w-none">
+      <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">{news.contentSnippet}</p>
     </div>
   </div>
 </article>
