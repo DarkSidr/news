@@ -1,0 +1,16 @@
+svelte-add version 2.7.3
+
+┌  Welcome to Svelte Add!
+(node:62529) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[?25l[999D[J│
+◆  Do you want to use typography plugin?
+│
+└
+[999D[4A[1B[J◇  Do you want to use typography plugin?
+│  No
+[?25h[?25l│
+[999D[J◒  Installing dependencies[999D[J◐  Installing dependencies[999D[J◓  Installing dependencies[999D[J◑  Installing dependencies[999D[J◒  Installing dependencies[999D[J◐  Installing dependencies[999D[J◓  Installing dependencies[999D[J◑  Installing dependencies[999D[J◒  Installing dependencies.[999D[J◐  Installing dependencies.[999D[J◓  Installing dependencies.[999D[J◑  Installing dependencies.[999D[J◒  Installing dependencies.[999D[J◐  Installing dependencies.[999D[J◓  Installing dependencies.[999D[J◑  Installing dependencies.[999D[J◒  Installing dependencies..[999D[J◐  Installing dependencies..[999D[J◓  Installing dependencies..[999D[J◑  Installing dependencies..[999D[J◒  Installing dependencies..[999D[J◐  Installing dependencies..[999D[J◓  Installing dependencies..[999D[J◑  Installing dependencies..[999D[J◒  Installing dependencies...[999D[J◐  Installing dependencies...[999D[J◓  Installing dependencies...[999D[J◑  Installing dependencies...[999D[J◒  Installing dependencies...[999D[J◐  Installing dependencies...[999D[J◓  Installing dependencies...[999D[J◑  Installing dependencies...[999D[J◒  Installing dependencies...[999D[J◐  Installing dependencies[999D[J◓  Installing dependencies[999D[J◑  Installing dependencies[999D[J◒  Installing dependencies[999D[J◐  Installing dependencies[999D[J◓  Installing dependencies[999D[J◑  Installing dependencies[999D[J◒  Installing dependencies[999D[J◐  Installing dependencies.[999D[J◓  Installing dependencies.[999D[J◇  Successfully installed dependencies
+[?25h│
+└  You're all set!
+
