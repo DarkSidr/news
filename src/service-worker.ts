@@ -35,24 +35,26 @@ sw.addEventListener('fetch', (event) => {
       const url = new URL(event.request.url);
       const cache = await caches.open(CACHE);
 
-      if (ASSETS.includes(url.pathname)) {
+      const isStaticAsset = ASSETS.includes(url.pathname);
+
+      if (isStaticAsset) {
         const cachedAsset = await cache.match(url.pathname);
         if (cachedAsset) return cachedAsset;
-      }
 
-      try {
-        const response = await fetch(event.request);
-
-        if (response instanceof Response && response.ok) {
-          cache.put(event.request, response.clone());
+        try {
+          const response = await fetch(event.request);
+          if (response instanceof Response && response.ok) {
+            void cache.put(url.pathname, response.clone());
+          }
+          return response;
+        } catch (error) {
+          const fallbackAsset = await cache.match(url.pathname);
+          if (fallbackAsset) return fallbackAsset;
+          throw error;
         }
-
-        return response;
-      } catch (error) {
-        const cachedResponse = await cache.match(event.request);
-        if (cachedResponse) return cachedResponse;
-        throw error;
       }
+
+      return fetch(event.request);
     })()
   );
 });

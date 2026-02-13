@@ -9,23 +9,32 @@
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"test": "vitest",
+		"test:run": "vitest run",
+		"test:watch": "vitest --watch"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-node": "^5.5.3",
 		"@sveltejs/kit": "^2.50.2",
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
 		"@tailwindcss/typography": "^0.5.19",
+		"@testing-library/svelte": "^5.3.1",
+		"@types/sanitize-html": "^2.16.0",
 		"autoprefixer": "^10.4.20",
+		"jsdom": "^28.0.0",
 		"svelte": "^5.49.2",
 		"svelte-check": "^4.3.6",
 		"tailwindcss": "^3.4.9",
 		"typescript": "^5.9.3",
-		"vite": "^7.3.1"
+		"vite": "^7.3.1",
+		"vitest": "^4.0.18"
 	},
 	"dependencies": {
 		"date-fns": "^4.1.0",
+		"html-entities": "^2.6.0",
 		"lucide-svelte": "^0.564.0",
-		"rss-parser": "^3.13.0"
+		"rss-parser": "^3.13.0",
+		"sanitize-html": "^2.17.0"
 	}
 }
