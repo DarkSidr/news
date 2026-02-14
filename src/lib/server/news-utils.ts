@@ -8,6 +8,11 @@ export type FeedItemLike = {
   link?: string;
   title?: string;
   pubDate?: string;
+  enclosure?: { url: string; type?: string };
+  'media:content'?: { $: { url: string } } | { $: { url: string } }[];
+  content?: string;
+  'content:encoded'?: string;
+  description?: string;
 };
 
 export function stripHtml(value: string): string {
@@ -19,6 +24,50 @@ export function stripHtml(value: string): string {
   return decode(sanitized)
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/**
+ * Extracts the main image URL from an RSS item.
+ * Prioritizes:
+ * 1. enclave.url
+ * 2. media:content
+ * 3. First <img src> in content/description
+ */
+export function extractImage(item: FeedItemLike): string | undefined {
+  // 1. Check enclosure
+  if (item.enclosure?.url) {
+    return item.enclosure.url;
+  }
+
+  // 2. Check media:content
+  if (item['media:content']) {
+    const media = item['media:content'];
+    if (Array.isArray(media)) {
+        if (media.length > 0 && media[0].$?.url) return media[0].$.url;
+    } else if (media.$?.url) {
+        return media.$.url;
+    }
+  }
+
+  // 3. Regex for <img src="..."> in content
+  const imgRegex = /<img[^>]+src="([^">]+)"/i;
+  
+  const contentCandidates = [
+    item['content:encoded'],
+    item.content,
+    item.description
+  ];
+
+  for (const candidate of contentCandidates) {
+    if (candidate) {
+      const match = candidate.match(imgRegex);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+  }
+
+  return undefined;
 }
 
 export function buildNewsId(feedName: string, item: FeedItemLike, index: number): string {

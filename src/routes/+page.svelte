@@ -1,10 +1,17 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { flip } from 'svelte/animate';
+  import { fade, fly } from 'svelte/transition';
+  import { cubicOut } from 'svelte/easing';
   import type { PageData } from './$types';
   import NewsCard from '$lib/components/NewsCard.svelte';
+  import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+  import MasonryGrid from '$lib/components/MasonryGrid.svelte';
+  import { LayoutGrid, ArrowDownNarrowWide, AlignJustify, LayoutTemplate } from 'lucide-svelte';
 
   let { data } = $props<{ data: PageData }>();
   let now = $state(new Date());
+  let layout = $state<'masonry' | 'grid'>('grid'); // Default to grid (left-to-right) as requested
   let updatedLabel = $derived(now.toLocaleTimeString('ru-RU'));
 
   const itemListSchema = $derived({
@@ -60,20 +67,54 @@
           времени
         </p>
       </div>
-      <div class="text-sm text-gray-400 dark:text-gray-500" aria-live="polite">
-        Обновлено: {updatedLabel}
+      <div class="flex items-center gap-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-1 flex items-center shadow-sm border border-gray-100 dark:border-gray-700">
+           <button
+            class="p-2 rounded-md transition-all {layout === 'grid' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 shadow-sm' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'}"
+            onclick={() => layout = 'grid'}
+            aria-label="Сетка (слева направо)"
+            title="Сортировка слева направо"
+          >
+            <LayoutGrid size={20} />
+          </button>
+          <button
+            class="p-2 rounded-md transition-all {layout === 'masonry' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 shadow-sm' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'}"
+            onclick={() => layout = 'masonry'}
+            aria-label="Колонки (сверху вниз)"
+            title="Сортировка сверху вниз"
+          >
+             <LayoutTemplate size={20} class="rotate-90" />
+          </button>
+        </div>
+
+        <div class="text-xs md:text-sm text-gray-400 dark:text-gray-500 font-mono hidden md:block" aria-live="polite">
+          {updatedLabel}
+        </div>
+        <ThemeToggle />
       </div>
     </header>
 
-    <main id="main-content" class="columns-1 md:columns-2 lg:columns-3 gap-6" aria-label="Лента новостей">
+    <main 
+      id="main-content" 
+      class="transition-all duration-500 ease-in-out {layout === 'masonry' ? 'columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6' : 'w-full'}" 
+      aria-label="Лента новостей"
+    >
       {#if data.news.length === 0}
-        <p class="text-center text-gray-500 dark:text-gray-400 py-12 bg-white/60 dark:bg-gray-900/60 rounded-xl">
-          Новости временно недоступны. Попробуйте обновить страницу через несколько минут.
-        </p>
+        <div class="col-span-full">
+            <p class="text-center text-gray-500 dark:text-gray-400 py-12 bg-white/60 dark:bg-gray-900/60 rounded-xl">
+            Новости временно недоступны. Попробуйте обновить страницу через несколько минут.
+            </p>
+        </div>
       {:else}
-        {#each data.news as item (item.id)}
-          <NewsCard news={item} />
-        {/each}
+        {#if layout === 'grid'}
+           <MasonryGrid items={data.news} />
+        {:else}
+           {#each data.news as item (item.id)}
+             <div class="mb-6 break-inside-avoid" animate:flip={{ duration: 400, easing: cubicOut }} in:fade={{ duration: 300, delay: 100 }}>
+                <NewsCard news={item} />
+             </div>
+           {/each}
+        {/if}
       {/if}
     </main>
   </div>

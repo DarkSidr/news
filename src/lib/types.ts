@@ -5,4 +5,6 @@ export interface NewsItem {
   pubDate: string;
   contentSnippet: string;
   source: string;
+  imageUrl?: string;
+  content?: string;
 }
