@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { buildNewsId, extractImage, normalizePubDate, stripHtml } from './news-utils';
+import { buildNewsId, extractImage, isLowQuality, normalizePubDate, stripHtml, stripReadMoreLinks } from './news-utils';
+import type { NewsItem } from '$lib/types';
 
 describe('stripHtml', () => {
   it('removes HTML tags and decodes entities', () => {
@@ -88,5 +89,76 @@ describe('extractImage', () => {
 
   it('returns undefined when no image sources are present', () => {
     expect(extractImage({ title: 'No image here' })).toBeUndefined();
+  });
+});
+
+describe('stripReadMoreLinks', () => {
+  it('removes "Читать далее" links', () => {
+    const html = '<p>Some text.</p><a href="https://habr.com/post/123">Читать далее</a>';
+    expect(stripReadMoreLinks(html)).toBe('<p>Some text.</p>');
+  });
+
+  it('removes "Read more" links', () => {
+    const html = '<p>Text</p> <a href="#">Read more...</a>';
+    expect(stripReadMoreLinks(html)).toBe('<p>Text</p> ');
+  });
+
+  it('keeps other links', () => {
+    const html = '<p>Check <a href="#">this link</a> out.</p>';
+    expect(stripReadMoreLinks(html)).toBe(html);
+  });
+  
+  it('removes "Читать далее" regardless of case', () => {
+      const html = '<a href="#">читАть дАлее</a>';
+      expect(stripReadMoreLinks(html)).toBe('');
+  });
+});
+
+describe('isLowQuality', () => {
+  const baseItem: NewsItem = {
+    id: '1',
+    title: 'Test Title',
+    link: 'https://example.com',
+    pubDate: new Date().toISOString(),
+    content: 'Some valuable content here that is definitely longer than fifty characters to ensure it is considered good quality.',
+    contentSnippet: 'Snippet',
+    source: 'Test',
+    imageUrl: undefined
+  };
+
+  it('identifies empty content as low quality', () => {
+    expect(isLowQuality({ ...baseItem, content: '' })).toBe(true);
+    expect(isLowQuality({ ...baseItem, content: '   ' })).toBe(true);
+  });
+
+  it('identifies "Comments" content as low quality', () => {
+    expect(isLowQuality({ ...baseItem, content: 'Comments' })).toBe(true);
+    expect(isLowQuality({ ...baseItem, content: '  Comments  ' })).toBe(true);
+    // HackerNews link style
+    expect(isLowQuality({ ...baseItem, content: '<a href="https://news.ycombinator.com/item?id=123">Comments</a>' })).toBe(true);
+  });
+
+  it('identifies very short content without image as low quality', () => {
+    expect(isLowQuality({ ...baseItem, content: 'Too short' })).toBe(true);
+  });
+
+  it('accepts short content if it has an image', () => {
+    expect(isLowQuality({ 
+      ...baseItem, 
+      content: 'Short but has image', 
+      imageUrl: 'https://example.com/image.jpg' 
+    })).toBe(false);
+  });
+
+  it('accepts normal length content', () => {
+    expect(isLowQuality(baseItem)).toBe(false);
+  });
+
+  it('identifies content identical to title as low quality (if no image)', () => {
+     expect(isLowQuality({ 
+      ...baseItem, 
+      title: 'Breaking News', 
+      content: 'Breaking News' 
+    })).toBe(true);
   });
 });

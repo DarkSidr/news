@@ -126,9 +126,6 @@
 
             <!-- Footer Action -->
             <div class="mt-16 pt-8 border-t border-gray-100 dark:border-gray-800 flex flex-col items-center">
-                <p class="text-gray-500 dark:text-gray-400 mb-6 text-center">
-                    Это сокращенная версия статьи. Полный материал доступен на сайте источника.
-                </p>
                 <a 
                     href={item.link} 
                     target="_blank" 

@@ -1,5 +1,6 @@
 import sanitizeHtml from 'sanitize-html';
 import { decode } from 'html-entities';
+import type { NewsItem } from '$lib/types';
 
 const FALLBACK_PUB_DATE_ISO = new Date(0).toISOString();
 
@@ -97,4 +98,36 @@ export function normalizePubDate(
   }
 
   return parsed.toISOString();
+}
+
+export function isLowQuality(item: NewsItem): boolean {
+  const content = item.content?.trim() || '';
+  const cleanContent = stripHtml(content);
+  
+  // 1. Empty content
+  if (!content || !cleanContent) return true;
+
+  // 2. Just "Comments" (common in HN RSS)
+  if (cleanContent.toLowerCase() === 'comments') return true;
+
+  // 3. Very short content (< 50 chars) without image
+  // Unless it's a video/gallery (but we only track imageUrl for now)
+  const hasImage = !!item.imageUrl;
+  if (cleanContent.length < 50 && !hasImage) {
+    return true;
+  }
+
+  // 4. Content is identical to the title (stub article) and no image
+  if (cleanContent === item.title.trim() && !hasImage) {
+    return true;
+  }
+
+  return false;
+}
+
+export function stripReadMoreLinks(html: string): string {
+  if (!html) return '';
+  // Removes <a ...>Read more...</a> or <a ...>Читать далее...</a>
+  // Case insensitive, handles whitespace, optional ellipsis
+  return html.replace(/<a[^>]*>\s*(?:Читать\s+далее|Read\s+more|Читaть\s+дaлee).*?<\/a>/gi, '');
 }

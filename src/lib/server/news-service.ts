@@ -1,6 +1,6 @@
 import Parser from 'rss-parser';
 import sanitizeHtml from 'sanitize-html';
-import { stripHtml, buildNewsId, normalizePubDate, extractImage, type FeedItemLike } from './news-utils';
+import { stripHtml, buildNewsId, normalizePubDate, extractImage, isLowQuality, stripReadMoreLinks, type FeedItemLike } from './news-utils';
 import type { NewsItem } from '$lib/types';
 
 const parser = new Parser({
@@ -95,6 +95,8 @@ export async function fetchAllNews(fetchFn: typeof fetch): Promise<NewsItem[]> {
   newsCache = results
     .flat()
     .filter((item) => {
+      if (isLowQuality(item)) return false;
+
       try {
         const hostname = new URL(item.link).hostname;
         return !BLOCKED_DOMAINS.some((domain) => hostname.includes(domain));
@@ -109,6 +111,10 @@ export async function fetchAllNews(fetchFn: typeof fetch): Promise<NewsItem[]> {
 
         item.content = item.content.replace(imgRegex, '');
         item.content = item.content.replace(/<figure[^>]*>\s*<\/figure>/gi, '');
+      }
+      
+      if (item.content) {
+          item.content = stripReadMoreLinks(item.content);
       }
 
       return item;
