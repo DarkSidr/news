@@ -2,7 +2,11 @@ import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { fetchAllNews } from '$lib/server/news-service';
 
-export const load: PageServerLoad = async ({ params, fetch }) => {
+export const load: PageServerLoad = async ({ params, fetch, setHeaders, url }) => {
+  setHeaders({
+    'cache-control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=60'
+  });
+
   const { id } = params;
   
   // In a real app with a DB, we would query by ID.
@@ -19,6 +23,7 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
   }
 
   return {
-    newsItem
+    newsItem,
+    pageUrl: url.href
   };
 };

@@ -1,17 +1,17 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { flip } from 'svelte/animate';
-  import { fade, fly } from 'svelte/transition';
+  import { fade } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
   import type { PageData } from './$types';
   import NewsCard from '$lib/components/NewsCard.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import MasonryGrid from '$lib/components/MasonryGrid.svelte';
-  import { LayoutGrid, ArrowDownNarrowWide, AlignJustify, LayoutTemplate } from 'lucide-svelte';
+  import { LayoutGrid, LayoutTemplate } from 'lucide-svelte';
 
   let { data } = $props<{ data: PageData }>();
   let now = $state(new Date());
-  let layout = $state<'masonry' | 'grid'>('grid'); // Default to grid (left-to-right) as requested
+  let layout = $state<'masonry' | 'ltr'>('ltr');
   let updatedLabel = $derived(now.toLocaleTimeString('ru-RU'));
 
   const itemListSchema = $derived({
@@ -31,7 +31,7 @@
 
     const timer = setInterval(() => {
       now = new Date();
-    }, 1000);
+    }, 60_000);
 
     return () => clearInterval(timer);
   });
@@ -70,8 +70,8 @@
       <div class="flex items-center gap-4">
         <div class="bg-white dark:bg-gray-800 rounded-lg p-1 flex items-center shadow-sm border border-gray-100 dark:border-gray-700">
            <button
-            class="p-2 rounded-md transition-all {layout === 'grid' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 shadow-sm' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'}"
-            onclick={() => layout = 'grid'}
+            class="p-2 rounded-md transition-all {layout === 'ltr' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 shadow-sm' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'}"
+            onclick={() => layout = 'ltr'}
             aria-label="Сетка (слева направо)"
             title="Сортировка слева направо"
           >
@@ -106,7 +106,7 @@
             </p>
         </div>
       {:else}
-        {#if layout === 'grid'}
+        {#if layout === 'ltr'}
            <MasonryGrid items={data.news} />
         {:else}
            {#each data.news as item (item.id)}

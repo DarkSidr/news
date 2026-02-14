@@ -3,20 +3,55 @@
   import type { PageData } from './$types';
   import { formatDistanceToNow } from 'date-fns';
   import { ru } from 'date-fns/locale';
-  import { ExternalLink, ArrowLeft, Calendar, Clock, Share2 } from 'lucide-svelte';
+  import { ExternalLink, ArrowLeft, Calendar, Clock } from 'lucide-svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 
   let { data } = $props<{ data: PageData }>();
   
   let item = $derived(data.newsItem);
+  let pageUrl = $derived(data.pageUrl);
+  let safeContent = $derived(item.content ?? '');
+  let safeDescription = $derived(item.contentSnippet || 'Подробности новости на TechNews.');
+  let publishedIso = $derived(new Date(item.pubDate).toISOString());
   let timeAgo = $derived(
     formatDistanceToNow(new Date(item.pubDate), { addSuffix: true, locale: ru })
   );
+  let newsArticleSchema = $derived({
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: item.title,
+    description: safeDescription,
+    datePublished: publishedIso,
+    dateModified: publishedIso,
+    mainEntityOfPage: pageUrl,
+    author: {
+      '@type': 'Organization',
+      name: item.source
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'TechNews'
+    },
+    image: item.imageUrl ? [item.imageUrl] : undefined
+  });
 </script>
 
 <svelte:head>
   <title>{item.title} | TechNews</title>
-  <meta name="description" content={item.contentSnippet} />
+  <meta name="description" content={safeDescription} />
+  <meta name="robots" content="index,follow,max-image-preview:large" />
+  <link rel="canonical" href={pageUrl} />
+  <meta property="og:title" content={item.title} />
+  <meta property="og:description" content={safeDescription} />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content={pageUrl} />
+  {#if item.imageUrl}
+    <meta property="og:image" content={item.imageUrl} />
+  {/if}
+  <meta property="article:published_time" content={publishedIso} />
+  <script type="application/ld+json">
+    {JSON.stringify(newsArticleSchema)}
+  </script>
 </svelte:head>
 
 <div class="min-h-screen bg-white dark:bg-gray-950 transition-colors duration-300 pb-20">
@@ -86,7 +121,7 @@
                 prose-img:rounded-xl prose-img:shadow-xl prose-img:my-8
                 prose-blockquote:border-l-blue-500 prose-blockquote:bg-gray-50 dark:prose-blockquote:bg-gray-900/50 prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-lg
                 ">
-                {@html item.content}
+                {@html safeContent}
             </div>
 
             <!-- Footer Action -->

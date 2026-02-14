@@ -11,6 +11,8 @@ export type FeedItemLike = {
   enclosure?: { url: string; type?: string };
   'media:content'?: { $: { url: string } } | { $: { url: string } }[];
   content?: string;
+  contentSnippet?: string;
+  contentEncoded?: string;
   'content:encoded'?: string;
   description?: string;
 };
@@ -29,7 +31,7 @@ export function stripHtml(value: string): string {
 /**
  * Extracts the main image URL from an RSS item.
  * Prioritizes:
- * 1. enclave.url
+ * 1. enclosure.url
  * 2. media:content
  * 3. First <img src> in content/description
  */
@@ -49,8 +51,8 @@ export function extractImage(item: FeedItemLike): string | undefined {
     }
   }
 
-  // 3. Regex for <img src="..."> in content
-  const imgRegex = /<img[^>]+src="([^">]+)"/i;
+  // 3. Regex for <img src="..."> or <img src='...'> in content
+  const imgRegex = /<img[^>]+src=["']([^"'>]+)["']/i;
   
   const contentCandidates = [
     item['content:encoded'],

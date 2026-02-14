@@ -81,7 +81,7 @@
 <button
   onclick={toggleTheme}
   class="relative p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-hidden group"
-  aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+  aria-label={isDark ? "Переключить на светлую тему" : "Переключить на тёмную тему"}
 >
   {#if isDark}
     <Moon size={20} class="text-blue-400" />

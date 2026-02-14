@@ -1,9 +1,7 @@
 <script lang="ts">
-  import type { NewsItem } from '$lib/types';
-  import NewsCard from '$lib/components/NewsCard.svelte';
-  import { flip } from 'svelte/animate';
-  import { fade } from 'svelte/transition';
-  import { cubicOut } from 'svelte/easing';
+import type { NewsItem } from '$lib/types';
+import NewsCard from '$lib/components/NewsCard.svelte';
+import { fade } from 'svelte/transition';
 
   let { items } = $props<{ items: NewsItem[] }>();
 
