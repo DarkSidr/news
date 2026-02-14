@@ -31,7 +31,7 @@
 
     const timer = setInterval(() => {
       now = new Date();
-    }, 60_000);
+    }, 1000);
 
     return () => clearInterval(timer);
   });
