@@ -1,25 +1,29 @@
 import { json } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { FeedFetcher } from '$lib/server/jobs/feed-fetcher';
-import { initDb } from '$lib/server/db';
+import { db } from '$lib/server/db';
 import type { RequestHandler } from '@sveltejs/kit';
+import { timingSafeEqual } from 'crypto';
+
+function secureCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
 
 export const POST: RequestHandler = async ({ request, fetch }) => {
   const authHeader = request.headers.get('authorization');
   const token = authHeader?.replace('Bearer ', '');
   const cronSecret = env.CRON_SECRET;
 
-  if (!cronSecret || token !== cronSecret) {
+  if (!cronSecret || !token || !secureCompare(token, cronSecret)) {
     return json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const startTime = Date.now();
-  let client;
 
   try {
-    const { client: dbClient, db } = await initDb();
-    client = dbClient;
-
     const fetcher = new FeedFetcher(db, fetch);
     const results = await fetcher.run();
 
@@ -38,10 +42,6 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
   } catch (err) {
     console.error('Feed fetcher failed:', err);
     return json({ error: 'Feed fetcher failed' }, { status: 500 });
-  } finally {
-    if (client) {
-      await client.end();
-    }
   }
 };
 

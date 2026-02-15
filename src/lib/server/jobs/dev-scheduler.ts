@@ -1,11 +1,11 @@
 import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
-import { initDb } from '$lib/server/db';
+import { db } from '$lib/server/db';
 import { FeedFetcher } from './feed-fetcher';
 
 declare global {
   // eslint-disable-next-line no-var
-  var __newsDevSchedulerStarted: boolean | undefined;
+  var __newsDevSchedulerInterval: NodeJS.Timeout | undefined;
 }
 
 function getIntervalMs(): number {
@@ -20,23 +20,14 @@ function getIntervalMs(): number {
 }
 
 async function runFeedFetchJob(): Promise<void> {
-  let client: { end: () => Promise<void> } | null = null;
-
   try {
-    const dbInit = await initDb();
-    client = dbInit.client;
-
-    const fetcher = new FeedFetcher(dbInit.db, fetch);
+    const fetcher = new FeedFetcher(db, fetch);
     const results = await fetcher.run();
 
     const totalNew = results.reduce((sum, item) => sum + item.newItemsCount, 0);
     console.log(`[DevScheduler] Fetch completed. Sources: ${results.length}, new: ${totalNew}`);
   } catch (error) {
     console.error('[DevScheduler] Fetch failed:', error);
-  } finally {
-    if (client) {
-      await client.end();
-    }
   }
 }
 
@@ -45,11 +36,11 @@ export function startDevScheduler(): void {
     return;
   }
 
-  if (globalThis.__newsDevSchedulerStarted) {
-    return;
+  // Clear existing interval if present (HMR support)
+  if (globalThis.__newsDevSchedulerInterval) {
+    clearInterval(globalThis.__newsDevSchedulerInterval);
+    console.log('[DevScheduler] Cleared existing interval');
   }
-
-  globalThis.__newsDevSchedulerStarted = true;
 
   const intervalMs = getIntervalMs();
   let running = false;
@@ -67,10 +58,13 @@ export function startDevScheduler(): void {
     }
   };
 
-  setInterval(() => {
+  const intervalId = setInterval(() => {
     void tick();
   }, intervalMs);
 
+  globalThis.__newsDevSchedulerInterval = intervalId;
+
+  // Run immediately on start
   void tick();
   console.log(`[DevScheduler] Started with interval ${intervalMs}ms`);
 }

@@ -1,48 +1,19 @@
 import { env } from '$env/dynamic/private';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { Client } from 'pg';
+import { Pool } from 'pg';
 import * as schema from './schema';
 
-const DEFAULT_DATABASE_URL =
-  'postgresql://technews:dev_password@localhost:5432/technews';
-
-function getConnectionString(): string {
-  return env.DATABASE_URL || DEFAULT_DATABASE_URL;
+if (!env.DATABASE_URL) {
+  throw new Error('DATABASE_URL is not set in environment variables');
 }
 
-/**
- * Create database client
- */
-export function createClient(): Client {
-  return new Client({
-    connectionString: getConnectionString()
-  });
-}
+const pool = new Pool({
+  connectionString: env.DATABASE_URL,
+  max: 10,
+  idleTimeoutMillis: 30000
+});
 
-/**
- * Create Drizzle ORM instance
- * Usage:
- *   const client = createClient();
- *   await client.connect();
- *   const db = createDrizzle(client);
- *   const articles = await db.query.articles.findMany();
- *   await client.end();
- */
-export function createDrizzle(client: Client) {
-  return drizzle({ client, schema });
-}
-
-/**
- * Initialize database connection
- * Returns connected client and db instance
- * Remember to call client.end() when done!
- */
-export async function initDb() {
-  const client = createClient();
-  await client.connect();
-  const db = createDrizzle(client);
-  return { client, db };
-}
+export const db = drizzle(pool, { schema });
 
 // Export schema for direct imports
 export { schema };

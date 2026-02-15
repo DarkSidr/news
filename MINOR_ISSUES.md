@@ -68,19 +68,22 @@
 - **Суть:** `config.ts` экспортирует `RSS_TIMEOUT_MS = 8_000`, но `RssSource` использует свой default `options.timeoutMs ?? 8_000`. Если поменять config — RssSource не обновится.
 - **Исправление:** В `rss-source.ts` импортировать `RSS_TIMEOUT_MS` из config.
 - **Источник:** Stage 2 Review (15.02.2026)
-- **Статус:** Открыто
+- **Статус:** Готово
+- **Приписка Antigravity (15.02.2026):** Исправил. В `src/lib/server/sources/rss-source.ts` добавлен импорт `RSS_TIMEOUT_MS` из конфига.
 
 ### 9. Dead code — SITE_URL в sitemap.xml
 - **Файл:** `src/routes/sitemap.xml/+server.ts:4`
 - **Суть:** `const SITE_URL = 'https://technews.dmitry.art'` — объявлена, но не используется.
 - **Источник:** Stage 2 Review (15.02.2026)
-- **Статус:** Открыто
+- **Статус:** Готово
+- **Приписка Antigravity (15.02.2026):** Исправил. Неиспользуемая константа `SITE_URL` удалена.
 
 ### 10. Canonical URL захардкожен
 - **Файл:** `src/routes/+page.svelte`
 - **Суть:** Домен `https://technews.dmitry.art/` захардкожен в canonical link. При смене домена или в dev — будет неверным.
 - **Источник:** Stage 2 Review (15.02.2026)
-- **Статус:** Открыто
+- **Статус:** Готово
+- **Приписка Antigravity (15.02.2026):** Исправил. Canonical URL теперь формируется динамически и передаётся с сервера.
 
 ### 11. CSP: unsafe-inline → nonce (техдолг для Stage 5)
 - **Файл:** `src/hooks.server.ts:18`
@@ -92,10 +95,43 @@
 - **Файлы:** `src/lib/server/news-service.ts:183,239`
 - **Суть:** Создаёт новые инстансы RssSource при каждом fetchAllNews() и getServiceStatus(). Стоит создать один раз на уровне модуля.
 - **Источник:** Stage 2 Review (15.02.2026)
-- **Статус:** Открыто
+- **Статус:** Готово
+- **Приписка Antigravity (15.02.2026):** Исправил. Источники инициализируются один раз как singleton в module scope.
 
 ### 13. Epoch-даты в sitemap
 - **Файл:** `src/routes/sitemap.xml/+server.ts:27`
 - **Суть:** Невалидные pubDate превращаются в `1970-01-01` в lastmod. Нужна фильтрация.
 - **Источник:** Stage 2 Review (15.02.2026)
-- **Статус:** Открыто
+- **Статус:** Готово (фильтрация добавлена в Stage 3)
+
+---
+
+## Stage 3
+
+### 14. `DEFAULT_DATABASE_URL` с паролем в исходниках
+- **Файл:** `src/lib/server/db/index.ts:6-7`
+- **Суть:** `postgresql://technews:dev_password@localhost:5432/technews` — dev-пароль захардкожен. Лучше выбрасывать ошибку если `DATABASE_URL` не задан.
+- **Источник:** Stage 3 Review (15.02.2026)
+- **Статус:** Готово
+- **Приписка Antigravity (15.02.2026):** Исправил. Дефолтный URL удалён, добавлена обязательная проверка `env.DATABASE_URL`.
+
+### 15. `isFeedSourceExistsByName` — неиспользуемая функция
+- **Файл:** `src/lib/server/db/news-repository.ts:170-184`
+- **Суть:** Экспортируется, но не используется. Заготовка для будущих этапов.
+- **Источник:** Stage 3 Review (15.02.2026)
+- **Статус:** Готово
+- **Приписка Antigravity (15.02.2026):** Исправил. Неиспользуемая функция удалена.
+
+### 16. `dev-scheduler.ts` — `setInterval` не очищается
+- **Файл:** `src/lib/server/jobs/dev-scheduler.ts:70-72`
+- **Суть:** Нет механизма остановки интервала. Для dev — не критично благодаря глобальному флагу.
+- **Источник:** Stage 3 Review (15.02.2026)
+- **Статус:** Готово
+- **Приписка Antigravity (15.02.2026):** Исправил. Добавлена очистка `clearInterval` для поддержки HMR.
+
+### 17. Рассинхрон `content_snippet` — varchar(500) vs MAX_SNIPPET_LENGTH=300
+- **Файлы:** `src/lib/server/db/schema.ts:39`, `src/lib/server/config.ts:13`
+- **Суть:** Схема позволяет 500 символов, код обрезает до 300.
+- **Источник:** Stage 3 Review (15.02.2026)
+- **Статус:** Готово
+- **Приписка Antigravity (15.02.2026):** Исправил. `MAX_SNIPPET_LENGTH` увеличен до 500.

@@ -39,7 +39,7 @@
 
 <svelte:head>
   <title>TechNews | Агрегатор технологических новостей</title>
-  <link rel="canonical" href="https://technews.dmitry.art/" />
+  <link rel="canonical" href={data.canonicalUrl} />
   <meta
     name="description"
     content="Интеллектуальный агрегатор новостей про разработку, ИИ и операционные системы в реальном времени."
@@ -100,6 +100,11 @@
       class="transition-all duration-500 ease-in-out {layout === 'masonry' ? 'columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6' : 'w-full'}" 
       aria-label="Лента новостей"
     >
+      {#if data.isFallback}
+        <div class="col-span-full mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 rounded-lg border border-yellow-200 dark:border-yellow-700 text-center text-sm">
+          ⚠️ База данных временно недоступна. Показана резервная лента (RSS).
+        </div>
+      {/if}
       {#if data.news.length === 0}
         <div class="col-span-full">
             <p class="text-center text-gray-500 dark:text-gray-400 py-12 bg-white/60 dark:bg-gray-900/60 rounded-xl">

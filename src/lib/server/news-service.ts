@@ -167,6 +167,9 @@ async function runPipeline(
   };
 }
 
+// Initialize sources once
+const allSources = createNewsSources();
+
 /**
  * Получить все новости (с кешированием)
  */
@@ -180,7 +183,6 @@ export async function fetchAllNews(fetchFn: typeof fetch): Promise<NewsItem[]> {
   }
 
   // Get active sources
-  const allSources = createNewsSources();
   const activeSources = getActiveSources(allSources);
 
   if (activeSources.length === 0) {
@@ -236,7 +238,6 @@ export function getServiceStatus(): {
   sourcesCount: number;
   cacheSize: number;
 } {
-  const allSources = createNewsSources();
   return {
     cacheAge: newsCache ? Date.now() - newsCache.timestamp : null,
     sourcesCount: allSources.length,

@@ -10,7 +10,7 @@ function parsePositiveInt(value: string, fallback: number): number {
 
 export const RSS_TIMEOUT_MS = parsePositiveInt(env.RSS_TIMEOUT_MS ?? '', 8_000);
 export const CACHE_TTL_MS = parsePositiveInt(env.CACHE_TTL_MS ?? '', 5 * 60 * 1000);
-export const MAX_SNIPPET_LENGTH = parsePositiveInt(env.MAX_SNIPPET_LENGTH ?? '', 300);
+export const MAX_SNIPPET_LENGTH = parsePositiveInt(env.MAX_SNIPPET_LENGTH ?? '', 500);
 
 export const BLOCKED_DOMAINS: string[] = (env.BLOCKED_DOMAINS || 'css-doodle.com')
   .split(',')
