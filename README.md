@@ -200,3 +200,12 @@ npm run test:run
 - `GET /api/health` — проверка состояния БД
 - `GET /sitemap.xml` — sitemap на основе данных из БД
 - `POST /api/cron/fetch` — ручной запуск сборщика новостей
+
+## Известные баги и фиксы
+
+### `/api/health` возвращал `status: error` при рабочей БД
+
+- **Симптом:** в логах была ошибка `toISOString is not a function`, а endpoint отдавал `db.connected: false`.
+- **Причина:** поле `latest_article_at` из SQL могло приходить как строка, но код ожидал `Date`.
+- **Как исправлено:** в `src/lib/server/db/news-repository.ts` добавлена нормализация `toNullableDate(...)` для `latest_article_at` перед возвратом в `getDbStats()`.
+- **Результат:** `GET /api/health` корректно возвращает `status: ok` и `db.connected: true`.

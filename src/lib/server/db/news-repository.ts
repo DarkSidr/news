@@ -34,6 +34,19 @@ function toIsoString(value: Date): string {
   return value.toISOString();
 }
 
+function toNullableDate(value: unknown): Date | null {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    const parsedDate = new Date(value);
+    return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+  }
+
+  return null;
+}
+
 function toNewsItem(row: DbNewsRow): NewsItem {
   const hasTitleTranslation = Boolean(row.translatedTitle?.trim());
   const hasSnippetTranslation = Boolean(row.translatedSnippet?.trim());
@@ -170,12 +183,12 @@ export async function getDbStats(): Promise<DbStatsRow> {
   const row = result.rows[0] as unknown as {
     sources_count: number;
     articles_count: number;
-    latest_article_at: Date | null;
+    latest_article_at: unknown;
   };
 
   return {
     sourcesCount: row?.sources_count ?? 0,
     articlesCount: row?.articles_count ?? 0,
-    latestArticleAt: row?.latest_article_at ?? null
+    latestArticleAt: toNullableDate(row?.latest_article_at)
   };
 }
