@@ -1,15 +1,21 @@
 import type { PageServerLoad } from './$types';
-import { fetchAllNews } from '$lib/server/news-service';
+import { error } from '@sveltejs/kit';
+import { getLatestNews } from '$lib/server/db/news-repository';
 
-export const load: PageServerLoad = async ({ setHeaders, fetch }) => {
+export const load: PageServerLoad = async ({ setHeaders }) => {
   setHeaders({
     'cache-control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=60'
   });
 
-  const allNews = await fetchAllNews(fetch);
+  try {
+    const allNews = await getLatestNews(50);
 
-  return {
-    news: allNews,
-    generatedAt: new Date().toISOString()
-  };
+    return {
+      news: allNews,
+      generatedAt: new Date().toISOString()
+    };
+  } catch (err) {
+    console.error('Failed to load news from database:', err);
+    throw error(503, 'База данных недоступна');
+  }
 };

@@ -99,7 +99,7 @@ src/
   - `RSS_TIMEOUT_MS` (сейчас 8000)
   - `CACHE_TTL_MS` (сейчас 5 * 60 * 1000)
   - `MAX_SNIPPET_LENGTH` (сейчас 300)
-- [ ] Использовать `$env/static/private` или `$env/dynamic/private` (Stage 3)
+- [x] Использовать `$env/static/private` или `$env/dynamic/private` (Stage 3)
 - [x] `.env` уже в `.gitignore`
 
 **Файлы для изменения:**
@@ -131,7 +131,7 @@ src/
 - [x] Создать `src/routes/api/health/+server.ts`
 - [x] Возвращать JSON: `{ status: 'ok', timestamp, feedsCount, cacheAge, cacheSize }`
 - [x] Добавить `getServiceStatus()` в news-service
-- [ ] В будущем добавить проверку БД (Stage 3)
+- [x] В будущем добавить проверку БД (Stage 3)
 
 **Файлы для изменения:**
 - `src/routes/api/health/+server.ts` (новый)
@@ -157,18 +157,18 @@ src/
 ### P0 — Обязательно
 
 #### 3.1 Выбор и настройка ORM/клиента
-- [ ] Установить `drizzle-orm` + `drizzle-kit` + `pg` (или `postgres`)
+- [x] Установить `drizzle-orm` + `drizzle-kit` + `pg` (или `postgres`)
   ```bash
   npm install drizzle-orm pg
   npm install -D drizzle-kit @types/pg
   ```
-- [ ] Создать `src/lib/server/db/index.ts` — подключение к PostgreSQL
-- [ ] Создать `src/lib/server/db/schema.ts` — схема таблиц
-- [ ] Создать `drizzle.config.ts` — конфигурация миграций
-- [ ] Добавить env-переменные: `DATABASE_URL`
+- [x] Создать `src/lib/server/db/index.ts` — подключение к PostgreSQL
+- [x] Создать `src/lib/server/db/schema.ts` — схема таблиц
+- [x] Создать `drizzle.config.ts` — конфигурация миграций
+- [x] Добавить env-переменные: `DATABASE_URL`
 
 #### 3.2 Схема базы данных
-- [ ] Таблица `feed_sources`:
+- [x] Таблица `feed_sources`:
   ```sql
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
@@ -179,7 +179,7 @@ src/
   last_fetched_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW()
   ```
-- [ ] Таблица `articles`:
+- [x] Таблица `articles`:
   ```sql
   id VARCHAR(100) PRIMARY KEY,  -- buildNewsId() hash
   source_id INTEGER REFERENCES feed_sources(id),
@@ -198,7 +198,7 @@ src/
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
   ```
-- [ ] Таблица `fetch_logs`:
+- [x] Таблица `fetch_logs`:
   ```sql
   id SERIAL PRIMARY KEY,
   source_id INTEGER REFERENCES feed_sources(id),
@@ -210,24 +210,24 @@ src/
   ```
 
 #### 3.3 Cron-сборщик (отвязка от пользовательских запросов)
-- [ ] Создать `src/lib/server/jobs/feed-fetcher.ts`:
+- [x] Создать `src/lib/server/jobs/feed-fetcher.ts`:
   - Импортировать все `NewsSource`-ы из Stage 2
   - Для каждого источника: fetch → parse → upsert в БД (INSERT ON CONFLICT DO NOTHING)
   - Логировать в `fetch_logs`
-- [ ] Создать API-эндпоинт для триггера: `src/routes/api/cron/fetch/+server.ts`
+- [x] Создать API-эндпоинт для триггера: `src/routes/api/cron/fetch/+server.ts`
   - Защитить секретным токеном (`CRON_SECRET` из env)
   - Вызывать `feedFetcher.run()`
-- [ ] Для dev-режима: запускать по расписанию через `node-cron` или SvelteKit hooks
+- [x] Для dev-режима: запускать по расписанию через `node-cron` или SvelteKit hooks
 
 #### 3.4 Рефакторинг запросов данных
-- [ ] Изменить `src/routes/+page.server.ts`:
+- [x] Изменить `src/routes/+page.server.ts`:
   - Вместо `fetchAllNews(fetch)` → запрос к БД: `SELECT * FROM articles ORDER BY pub_date DESC LIMIT 50`
-- [ ] Изменить `src/routes/news/[id]/+page.server.ts`:
+- [x] Изменить `src/routes/news/[id]/+page.server.ts`:
   - Вместо `fetchAllNews` + поиск по массиву → `SELECT * FROM articles WHERE id = $1`
-- [ ] Удалить in-memory кеш из `news-service.ts` (или оставить как fallback)
+- [x] Удалить in-memory кеш из `news-service.ts` (или оставить как fallback)
 
 #### 3.5 Docker-compose для разработки
-- [ ] Создать `docker-compose.dev.yml`:
+- [x] Создать `docker-compose.dev.yml`:
   ```yaml
   services:
     postgres:
@@ -243,8 +243,8 @@ src/
   volumes:
     pgdata:
   ```
-- [ ] Добавить скрипт миграции в `package.json`: `"db:push": "drizzle-kit push"`
-- [ ] Обновить `README.md` с инструкциями по запуску
+- [x] Добавить скрипт миграции в `package.json`: `"db:push": "drizzle-kit push"`
+- [x] Обновить `README.md` с инструкциями по запуску
 
 **Файлы для создания:**
 - `src/lib/server/db/index.ts`
@@ -264,7 +264,7 @@ src/
 ### P1 — Важно
 
 #### 3.6 Миграция sitemap на БД
-- [ ] Обновить `sitemap.xml/+server.ts` — генерировать из таблицы `articles`
+- [x] Обновить `sitemap.xml/+server.ts` — генерировать из таблицы `articles`
 
 #### 3.7 Пагинация
 - [ ] Добавить пагинацию на главной (offset/limit или cursor-based)

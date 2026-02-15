@@ -2,4 +2,4 @@
 User-agent: *
 Disallow:
 
-Sitemap: /sitemap.xml
+Sitemap: https://technews.dmitry.art/sitemap.xml

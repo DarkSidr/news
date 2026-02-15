@@ -1,7 +1,5 @@
 import type { RequestHandler } from '@sveltejs/kit';
-import { fetchAllNews } from '$lib/server/news-service';
-
-const SITE_URL = 'https://technews.dmitry.art'; // Update with actual domain
+import { getSitemapNews } from '$lib/server/db/news-repository';
 
 interface SitemapUrl {
   loc: string;
@@ -10,12 +8,11 @@ interface SitemapUrl {
   lastmod?: string;
 }
 
-export const GET: RequestHandler = async ({ fetch, url }) => {
+export const GET: RequestHandler = async ({ url }) => {
   const baseUrl = `${url.protocol}//${url.host}`;
 
   try {
-    // Fetch current news for sitemap
-    const news = await fetchAllNews(fetch);
+    const news = await getSitemapNews(100);
 
     const urls: SitemapUrl[] = [
       { loc: baseUrl, priority: '1.0', changefreq: 'daily' },
@@ -23,7 +20,9 @@ export const GET: RequestHandler = async ({ fetch, url }) => {
         loc: `${baseUrl}/news/${encodeURIComponent(item.id)}`,
         priority: '0.8',
         changefreq: 'daily',
-        lastmod: item.pubDate.split('T')[0]
+        lastmod: item.pubDate.toISOString().startsWith('1970-01-01')
+          ? undefined
+          : item.pubDate.toISOString().split('T')[0]
       }))
     ];
 

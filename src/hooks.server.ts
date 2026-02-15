@@ -1,4 +1,7 @@
 import type { Handle } from '@sveltejs/kit';
+import { startDevScheduler } from '$lib/server/jobs/dev-scheduler';
+
+startDevScheduler();
 
 /**
  * Content Security Policy headers

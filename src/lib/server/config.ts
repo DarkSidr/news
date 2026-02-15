@@ -1,21 +1,18 @@
-/**
- * Конфигурация сервиса новостей
- * 
- * Для переопределения создайте .env файл в корне проекта:
- * RSS_TIMEOUT_MS=8000
- * CACHE_TTL_MS=300000
- * MAX_SNIPPET_LENGTH=300
- * BLOCKED_DOMAINS=css-doodle.com,example.com
- */
+import { env } from '$env/dynamic/private';
 
-// RSS таймаут (мс)
-export const RSS_TIMEOUT_MS = 8_000;
+function parsePositiveInt(value: string, fallback: number): number {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+  return parsed;
+}
 
-// TTL кеша (мс) - по умолчанию 5 минут
-export const CACHE_TTL_MS = 5 * 60 * 1000;
+export const RSS_TIMEOUT_MS = parsePositiveInt(env.RSS_TIMEOUT_MS ?? '', 8_000);
+export const CACHE_TTL_MS = parsePositiveInt(env.CACHE_TTL_MS ?? '', 5 * 60 * 1000);
+export const MAX_SNIPPET_LENGTH = parsePositiveInt(env.MAX_SNIPPET_LENGTH ?? '', 300);
 
-// Максимальная длина сниппета
-export const MAX_SNIPPET_LENGTH = 300;
-
-// Блокированные домены
-export const BLOCKED_DOMAINS: string[] = ['css-doodle.com'];
+export const BLOCKED_DOMAINS: string[] = (env.BLOCKED_DOMAINS || 'css-doodle.com')
+  .split(',')
+  .map((domain: string) => domain.trim())
+  .filter((domain: string) => domain.length > 0);

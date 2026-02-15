@@ -122,7 +122,7 @@ async function runPipeline(
 
     try {
       const hostname = new URL(item.link).hostname;
-      if (BLOCKED_DOMAINS.some((domain: string) => hostname.includes(domain))) {
+      if (BLOCKED_DOMAINS.some((domain) => hostname.includes(domain))) {
         return false;
       }
     } catch {

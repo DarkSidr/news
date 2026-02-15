@@ -1,42 +1,191 @@
-# sv
+# TechNews
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Интеллектуальный агрегатор технологических новостей на `SvelteKit 5 + TypeScript + TailwindCSS`.
 
-## Creating a project
+## Полный локальный запуск (одна инструкция)
 
-If you're seeing this, you've probably already done this step. Congrats!
+### 0) Требования
 
-```sh
-# create a new project
-npx sv create my-app
+- Node.js `v24+`
+- Docker + Docker Compose
+- (Опционально) Portainer: `https://localhost:9443`
+
+### 1) Проверка и запуск Docker
+
+Проверить Docker:
+
+```bash
+docker version
+docker info
+docker ps
 ```
 
-To recreate this project with the same configuration:
+Если Docker daemon не запущен (Linux):
 
-```sh
-# recreate this project
-npx sv create --template minimal --types ts --install npm news-app
+```bash
+sudo systemctl start docker
+sudo systemctl status docker
 ```
 
-## Developing
+Автозапуск Docker после перезагрузки:
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+```bash
+sudo systemctl enable docker
+```
 
-```sh
+### 2) Запуск проекта
+
+```bash
+cd /home/darksidr/projects/news
+npm install
+cp .env.example .env
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+Приложение будет доступно на `http://localhost:5173`.
 
-To create a production version of your app:
+### 3) Поднять PostgreSQL в Docker
 
-```sh
+```bash
+cd /home/darksidr/projects/news
+docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml ps
+```
+
+Ожидаемый контейнер: `technews-postgres`.
+
+### 4) Применить схему базы данных
+
+```bash
+cd /home/darksidr/projects/news
+npm run db:push
+```
+
+### 5) Заполнить БД новостями (ручной cron-триггер)
+
+```bash
+cd /home/darksidr/projects/news
+source .env
+curl -X POST http://localhost:5173/api/cron/fetch \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
+
+Примечание: в dev-режиме также работает встроенный планировщик (`DEV_FETCH_INTERVAL_MS`).
+
+## Управление проектом
+
+### Остановить приложение
+
+В терминале с `npm run dev`: `Ctrl + C`.
+
+### Остановить только PostgreSQL контейнер проекта
+
+```bash
+cd /home/darksidr/projects/news
+docker compose -f docker-compose.dev.yml stop
+```
+
+### Полностью остановить и удалить контейнер проекта
+
+```bash
+cd /home/darksidr/projects/news
+docker compose -f docker-compose.dev.yml down
+```
+
+### Полностью остановить Docker daemon (если нужно)
+
+```bash
+sudo systemctl stop docker
+```
+
+## Проверка, что приложение реально работает с PostgreSQL
+
+### 1) Проверить health endpoint
+
+```bash
+curl http://localhost:5173/api/health
+```
+
+Должно быть `db.connected: true`.
+
+### 2) Посмотреть базу напрямую (через psql в контейнере)
+
+```bash
+docker exec -it technews-postgres psql -U technews -d technews
+```
+
+Полезные SQL-команды:
+
+```sql
+\dt
+select count(*) from feed_sources;
+select count(*) from articles;
+select count(*) from fetch_logs;
+
+select id, name, last_fetched_at from feed_sources order by id;
+select title, pub_date from articles order by pub_date desc limit 10;
+select source_id, new_items_count, fetched_at, error
+from fetch_logs
+order by fetched_at desc
+limit 10;
+```
+
+Выход из `psql`:
+
+```sql
+\q
+```
+
+### 3) Жёсткая проверка “UI читает из БД”
+
+Очистить новости в БД:
+
+```bash
+docker exec -it technews-postgres psql -U technews -d technews -c "truncate table articles cascade;"
+```
+
+После этого:
+
+1. Обновите `http://localhost:5173` — лента станет пустой.
+2. Дерните cron (`POST /api/cron/fetch`).
+3. Обновите страницу — новости вернутся.
+
+Это подтверждает, что данные читаются именно из PostgreSQL.
+
+## Работа через Portainer
+
+Portainer URL: `https://localhost:9443`
+
+Где смотреть:
+
+1. `Containers` -> `technews-postgres`
+2. `Logs` — логи PostgreSQL
+3. `Console` — можно открыть shell и выполнить `psql -U technews -d technews`
+
+Важно: Portainer управляет контейнером, но SQL удобнее и быстрее проверять через терминал `docker exec ... psql`.
+
+## Переменные окружения (`.env`)
+
+Основные переменные:
+
+- `DATABASE_URL` — строка подключения к PostgreSQL
+- `CRON_SECRET` — токен для `POST /api/cron/fetch`
+- `DEV_FETCH_INTERVAL_MS` — интервал встроенного dev-планировщика
+- `RSS_TIMEOUT_MS` — таймаут RSS-запросов
+- `CACHE_TTL_MS` — TTL кеша
+- `MAX_SNIPPET_LENGTH` — длина сниппета
+- `BLOCKED_DOMAINS` — блок-лист доменов
+
+## Проверка проекта
+
+```bash
+npm run check
 npm run build
+npm run test:run
 ```
 
-You can preview the production build with `npm run preview`.
+## Полезные эндпоинты
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+- `GET /api/health` — проверка состояния БД
+- `GET /sitemap.xml` — sitemap на основе данных из БД
+- `POST /api/cron/fetch` — ручной запуск сборщика новостей

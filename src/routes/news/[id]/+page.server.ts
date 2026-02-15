@@ -1,25 +1,25 @@
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { fetchAllNews } from '$lib/server/news-service';
+import { getNewsById } from '$lib/server/db/news-repository';
 
-export const load: PageServerLoad = async ({ params, fetch, setHeaders, url }) => {
+export const load: PageServerLoad = async ({ params, setHeaders, url }) => {
   setHeaders({
     'cache-control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=60'
   });
 
   const { id } = params;
-  
-  // In a real app with a DB, we would query by ID.
-  // Here we have to fetch the feed again (or rely on cache).
-  const allNews = await fetchAllNews(fetch);
-  
-  // We need to decode the ID because it might contain colons/urls
   const decodedId = decodeURIComponent(id);
-  
-  const newsItem = allNews.find(item => item.id === decodedId);
+
+  let newsItem = null;
+  try {
+    newsItem = await getNewsById(decodedId);
+  } catch (err) {
+    console.error(`Failed to load news item ${decodedId} from database:`, err);
+    throw error(503, 'База данных недоступна');
+  }
 
   if (!newsItem) {
-    throw error(404, 'News item not found');
+    throw error(404, 'Новость не найдена');
   }
 
   return {

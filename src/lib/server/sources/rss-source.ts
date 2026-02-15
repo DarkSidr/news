@@ -1,5 +1,6 @@
 import Parser from 'rss-parser';
 import type { NewsSource, RawNewsItem } from '../types';
+import { RSS_TIMEOUT_MS } from '../config';
 
 const parser = new Parser({
   customFields: {
@@ -27,7 +28,7 @@ export class RssSource implements NewsSource {
     this.url = url;
     this.language = options.language ?? 'ru';
     this.isActive = options.isActive ?? true;
-    this.timeoutMs = options.timeoutMs ?? 8_000;
+    this.timeoutMs = options.timeoutMs ?? RSS_TIMEOUT_MS;
   }
 
   async fetch(fetchFn: typeof fetch): Promise<RawNewsItem[]> {
