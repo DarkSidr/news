@@ -58,3 +58,44 @@
 - **Источник:** Stage 1.5 Review (14.02.2026)
 - **Статус:** Готово
 - **Приписка Codex (14.02.2026):** Исправил. В `src/routes/news/[id]/+page.svelte` добавлен безопасный fallback `safeContent = item.content ?? ''` перед `{@html}`.
+
+---
+
+## Stage 2
+
+### 8. Таймаут дублирован между config.ts и RssSource
+- **Файлы:** `src/lib/server/config.ts:12`, `src/lib/server/sources/rss-source.ts:30`
+- **Суть:** `config.ts` экспортирует `RSS_TIMEOUT_MS = 8_000`, но `RssSource` использует свой default `options.timeoutMs ?? 8_000`. Если поменять config — RssSource не обновится.
+- **Исправление:** В `rss-source.ts` импортировать `RSS_TIMEOUT_MS` из config.
+- **Источник:** Stage 2 Review (15.02.2026)
+- **Статус:** Открыто
+
+### 9. Dead code — SITE_URL в sitemap.xml
+- **Файл:** `src/routes/sitemap.xml/+server.ts:4`
+- **Суть:** `const SITE_URL = 'https://technews.dmitry.art'` — объявлена, но не используется.
+- **Источник:** Stage 2 Review (15.02.2026)
+- **Статус:** Открыто
+
+### 10. Canonical URL захардкожен
+- **Файл:** `src/routes/+page.svelte`
+- **Суть:** Домен `https://technews.dmitry.art/` захардкожен в canonical link. При смене домена или в dev — будет неверным.
+- **Источник:** Stage 2 Review (15.02.2026)
+- **Статус:** Открыто
+
+### 11. CSP: unsafe-inline → nonce (техдолг для Stage 5)
+- **Файл:** `src/hooks.server.ts:18`
+- **Суть:** `script-src 'self' 'unsafe-inline'` снижает защиту от XSS. Нужна миграция на nonce-based CSP через `%sveltekit.nonce%`.
+- **Источник:** Stage 2 Review (15.02.2026)
+- **Статус:** Открыто (отложить до Stage 5)
+
+### 12. createNewsSources() пересоздаётся при каждом вызове
+- **Файлы:** `src/lib/server/news-service.ts:183,239`
+- **Суть:** Создаёт новые инстансы RssSource при каждом fetchAllNews() и getServiceStatus(). Стоит создать один раз на уровне модуля.
+- **Источник:** Stage 2 Review (15.02.2026)
+- **Статус:** Открыто
+
+### 13. Epoch-даты в sitemap
+- **Файл:** `src/routes/sitemap.xml/+server.ts:27`
+- **Суть:** Невалидные pubDate превращаются в `1970-01-01` в lastmod. Нужна фильтрация.
+- **Источник:** Stage 2 Review (15.02.2026)
+- **Статус:** Открыто

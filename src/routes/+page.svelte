@@ -39,6 +39,7 @@
 
 <svelte:head>
   <title>TechNews | Агрегатор технологических новостей</title>
+  <link rel="canonical" href="https://technews.dmitry.art/" />
   <meta
     name="description"
     content="Интеллектуальный агрегатор новостей про разработку, ИИ и операционные системы в реальном времени."

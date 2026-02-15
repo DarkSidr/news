@@ -1,127 +1,248 @@
-import Parser from 'rss-parser';
 import sanitizeHtml from 'sanitize-html';
-import { stripHtml, buildNewsId, normalizePubDate, extractImage, isLowQuality, stripReadMoreLinks, type FeedItemLike } from './news-utils';
+import {
+  stripHtml,
+  buildNewsId,
+  normalizePubDate,
+  extractImage,
+  isLowQuality,
+  stripReadMoreLinks,
+  type FeedItemLike
+} from './news-utils';
+import { createNewsSources, getActiveSources } from './sources';
+import { BLOCKED_DOMAINS, RSS_TIMEOUT_MS, CACHE_TTL_MS, MAX_SNIPPET_LENGTH } from './config';
 import type { NewsItem } from '$lib/types';
+import type { NewsSource, RawNewsItem, PipelineResult, NewsServiceConfig } from './types';
 
-const parser = new Parser({
-  customFields: {
-    item: [
-      ['content:encoded', 'contentEncoded'],
-    ]
-  }
-});
-const RSS_TIMEOUT_MS = 8_000;
-const MAX_SNIPPET_LENGTH = 300;
-const BLOCKED_DOMAINS = ['css-doodle.com'];
-
-const FEEDS = [
-  { name: 'OpenNET', url: 'https://www.opennet.ru/opennews/opennews_all_utf.rss' },
-  { name: 'Habr', url: 'https://habr.com/ru/rss/best/daily/?fl=ru' },
-  { name: 'HackerNews', url: 'https://news.ycombinator.com/rss' },
-  { name: 'Phoronix', url: 'https://www.phoronix.com/rss.php' },
-  { name: 'TechCrunch AI', url: 'https://techcrunch.com/category/artificial-intelligence/feed/' }
-];
-
-let newsCache: NewsItem[] | null = null;
-let lastFetchTime = 0;
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
-async function parseFeedWithTimeout(url: string, fetchFn: typeof fetch) {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), RSS_TIMEOUT_MS);
-
-  try {
-    const response = await fetchFn(url, {
-      signal: controller.signal,
-      headers: {
-        'user-agent': 'news-app-bot/1.0'
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
-    const xml = await response.text();
-    return await parser.parseString(xml);
-  } finally {
-    clearTimeout(timeoutId);
-  }
+/**
+ * In-memory cache для новостей
+ */
+interface NewsCache {
+  items: NewsItem[];
+  timestamp: number;
 }
 
-export async function fetchAllNews(fetchFn: typeof fetch): Promise<NewsItem[]> {
-  const now = Date.now();
-  if (newsCache && (now - lastFetchTime < CACHE_TTL_MS)) {
-    return newsCache;
-  }
+let newsCache: NewsCache | null = null;
 
-  const feedPromises = FEEDS.map(async (feed) => {
+/**
+ * Конфигурация сервиса
+ */
+function getConfig(): NewsServiceConfig {
+  return {
+    rssTimeoutMs: RSS_TIMEOUT_MS,
+    cacheTtlMs: CACHE_TTL_MS,
+    maxSnippetLength: MAX_SNIPPET_LENGTH
+  };
+}
+
+/**
+ * Преобразовать RawNewsItem в NewsItem
+ */
+function transformNewsItem(
+  raw: RawNewsItem,
+  sourceName: string,
+  index: number,
+  config: NewsServiceConfig
+): NewsItem {
+  const feedItemLike: FeedItemLike = {
+    guid: raw.guid,
+    link: raw.link,
+    title: raw.title,
+    pubDate: raw.pubDate,
+    enclosure: raw.enclosure,
+    'media:content': raw['media:content'],
+    content: raw.content,
+    contentSnippet: raw.contentSnippet,
+    'content:encoded': raw['content:encoded']
+  };
+
+  const fullContent =
+    raw['content:encoded'] || raw.content || raw.contentSnippet || '';
+
+  return {
+    id: buildNewsId(sourceName, feedItemLike, index),
+    title: stripHtml(raw.title || 'Без заголовка'),
+    link: raw.link,
+    pubDate: normalizePubDate(raw.pubDate),
+    contentSnippet: stripHtml(raw.contentSnippet || fullContent).slice(
+      0,
+      config.maxSnippetLength
+    ),
+    source: sourceName,
+    imageUrl: extractImage(feedItemLike),
+    content: sanitizeHtml(fullContent, {
+      allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'figure', 'figcaption']),
+      allowedAttributes: {
+        ...sanitizeHtml.defaults.allowedAttributes,
+        img: ['src', 'alt', 'title', 'width', 'height']
+      }
+    })
+  };
+}
+
+/**
+ * Pipeline: fetch → transform → filter → dedupe → sort
+ */
+async function runPipeline(
+  sources: NewsSource[],
+  fetchFn: typeof fetch,
+  config: NewsServiceConfig
+): Promise<PipelineResult> {
+  const errors: Array<{ source: string; error: Error }> = [];
+  const allItems: NewsItem[] = [];
+  let totalFetched = 0;
+
+  // Fetch from all sources in parallel
+  const fetchPromises = sources.map(async (source) => {
     try {
-      const feedData = await parseFeedWithTimeout(feed.url, fetchFn);
-      return feedData.items.map((item, index) => {
-        const feedItem = item as FeedItemLike;
-        const fullContent =
-          feedItem.contentEncoded ||
-          feedItem['content:encoded'] ||
-          feedItem.content ||
-          feedItem.description ||
-          '';
-        
-        return {
-          id: buildNewsId(feed.name, feedItem, index),
-          title: stripHtml(feedItem.title || 'Без заголовка'),
-          link: feedItem.link || '',
-          pubDate: normalizePubDate(feedItem.pubDate),
-          contentSnippet: stripHtml(feedItem.contentSnippet || fullContent).slice(0, MAX_SNIPPET_LENGTH),
-          source: feed.name,
-          imageUrl: extractImage(feedItem),
-          content: sanitizeHtml(fullContent, {
-            allowedTags: sanitizeHtml.defaults.allowedTags.concat([ 'img', 'figure', 'figcaption' ]),
-            allowedAttributes: {
-               ...sanitizeHtml.defaults.allowedAttributes,
-               img: ['src', 'alt', 'title', 'width', 'height']
-            }
-          })
-        } as NewsItem;
-      });
+      const rawItems = await source.fetch(fetchFn);
+      totalFetched += rawItems.length;
+      return { source, rawItems };
     } catch (error) {
-      console.error(`Error fetching feed ${feed.name}:`, error);
-      return [];
+      const err = error instanceof Error ? error : new Error(String(error));
+      errors.push({ source: source.name, error: err });
+      console.error(`Error fetching from ${source.name}:`, err);
+      return { source, rawItems: [] };
     }
   });
 
-  const results = await Promise.all(feedPromises);
+  const fetchResults = await Promise.all(fetchPromises);
 
-  newsCache = results
-    .flat()
-    .filter((item) => {
-      if (isLowQuality(item)) return false;
+  // Transform and collect
+  for (const { source, rawItems } of fetchResults) {
+    for (let i = 0; i < rawItems.length; i++) {
+      const raw = rawItems[i];
+      const item = transformNewsItem(raw, source.name, i, config);
+      allItems.push(item);
+    }
+  }
 
-      try {
-        const hostname = new URL(item.link).hostname;
-        return !BLOCKED_DOMAINS.some((domain) => hostname.includes(domain));
-      } catch {
-        return true;
+  // Filter: blocked domains + low quality
+  const filtered = allItems.filter((item) => {
+    if (isLowQuality(item)) return false;
+
+    try {
+      const hostname = new URL(item.link).hostname;
+      if (BLOCKED_DOMAINS.some((domain: string) => hostname.includes(domain))) {
+        return false;
       }
-    })
-    .map(item => {
-      if (item.imageUrl && item.content) {
-        const cleanUrl = item.imageUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const imgRegex = new RegExp(`<img[^>]+src=["']${cleanUrl}["'][^>]*>`, 'i');
+    } catch {
+      // Invalid URL, skip domain check
+    }
 
-        item.content = item.content.replace(imgRegex, '');
-        item.content = item.content.replace(/<figure[^>]*>\s*<\/figure>/gi, '');
-      }
-      
-      if (item.content) {
-          item.content = stripReadMoreLinks(item.content);
-      }
+    return true;
+  });
 
-      return item;
-    })
-    .sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
-  
-  lastFetchTime = Date.now();
-  
-  return newsCache;
+  // Post-process: remove featured images from content, strip read more links
+  const processed = filtered.map((item) => {
+    let content = item.content;
+
+    if (item.imageUrl && content) {
+      const cleanUrl = item.imageUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const imgRegex = new RegExp(`<img[^>]+src=["']${cleanUrl}["'][^>]*>`, 'i');
+
+      content = content.replace(imgRegex, '');
+      content = content.replace(/<figure[^>]*>\s*<\/figure>/gi, '');
+    }
+
+    if (content) {
+      content = stripReadMoreLinks(content);
+    }
+
+    return { ...item, content };
+  });
+
+  // Sort by date
+  const sorted = processed.sort(
+    (a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
+  );
+
+  return {
+    items: sorted,
+    errors,
+    stats: {
+      totalFetched,
+      filtered: allItems.length - filtered.length,
+      final: sorted.length
+    }
+  };
 }
+
+/**
+ * Получить все новости (с кешированием)
+ */
+export async function fetchAllNews(fetchFn: typeof fetch): Promise<NewsItem[]> {
+  const config = getConfig();
+  const now = Date.now();
+
+  // Check cache
+  if (newsCache && now - newsCache.timestamp < config.cacheTtlMs) {
+    return newsCache.items;
+  }
+
+  // Get active sources
+  const allSources = createNewsSources();
+  const activeSources = getActiveSources(allSources);
+
+  if (activeSources.length === 0) {
+    console.warn('No active news sources configured');
+    return [];
+  }
+
+  // Run pipeline
+  const result = await runPipeline(activeSources, fetchFn, config);
+
+  // Log stats
+  console.log(
+    `[NewsService] Fetched ${result.stats.totalFetched} items, ` +
+      `filtered ${result.stats.filtered}, final: ${result.stats.final}`
+  );
+
+  if (result.errors.length > 0) {
+    console.warn(`[NewsService] ${result.errors.length} sources failed`);
+  }
+
+  // Update cache
+  newsCache = {
+    items: result.items,
+    timestamp: now
+  };
+
+  return result.items;
+}
+
+/**
+ * Получить одну новость по ID
+ */
+export async function fetchNewsById(
+  fetchFn: typeof fetch,
+  id: string
+): Promise<NewsItem | null> {
+  const allNews = await fetchAllNews(fetchFn);
+  return allNews.find((item) => item.id === id) || null;
+}
+
+/**
+ * Инвалидировать кеш (для cron-задач)
+ */
+export function invalidateCache(): void {
+  newsCache = null;
+}
+
+/**
+ * Получить статус сервиса (для health-check)
+ */
+export function getServiceStatus(): {
+  cacheAge: number | null;
+  sourcesCount: number;
+  cacheSize: number;
+} {
+  const allSources = createNewsSources();
+  return {
+    cacheAge: newsCache ? Date.now() - newsCache.timestamp : null,
+    sourcesCount: allSources.length,
+    cacheSize: newsCache?.items.length ?? 0
+  };
+}
+
+// Re-export types for convenience
+export type { NewsSource, RawNewsItem, PipelineResult, NewsServiceConfig };

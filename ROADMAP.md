@@ -59,7 +59,7 @@ src/
 ### P0 — Обязательно
 
 #### 2.1 Рефакторинг news-service.ts — абстракция источников
-- [ ] Создать интерфейс `NewsSource` в `src/lib/server/types.ts`:
+- [x] Создать интерфейс `NewsSource` в `src/lib/server/types.ts`:
   ```typescript
   interface NewsSource {
     name: string;
@@ -77,14 +77,14 @@ src/
     source: string;
   }
   ```
-- [ ] Создать `src/lib/server/sources/rss-source.ts` — реализация `NewsSource` для RSS
-- [ ] Создать `src/lib/server/sources/index.ts` — реестр источников (экспорт массива `NewsSource[]`)
-- [ ] Рефакторить `news-service.ts` — использовать pipeline:
+- [x] Создать `src/lib/server/sources/rss-source.ts` — реализация `NewsSource` для RSS
+- [x] Создать `src/lib/server/sources/index.ts` — реестр источников (экспорт массива `NewsSource[]`)
+- [x] Рефакторить `news-service.ts` — использовать pipeline:
   ```
   sources.map(s => s.fetch()) → flatten → transform → filter → sort → cache
   ```
-- [ ] Перенести `FEEDS` массив в `sources/rss-source.ts`
-- [ ] Прогнать тесты: `npm run test && npm run check && npm run build`
+- [x] Перенести `FEEDS` массив в `sources/rss-source.ts`
+- [x] Прогнать тесты: `npm run test && npm run check && npm run build`
 
 **Файлы для изменения:**
 - `src/lib/server/news-service.ts` (рефакторинг)
@@ -93,13 +93,14 @@ src/
 - `src/lib/server/sources/index.ts` (новый)
 
 #### 2.2 Вынести конфигурацию в env-переменные
-- [ ] Создать `.env.example` с описанием всех переменных
-- [ ] Заменить хардкод в `news-service.ts`:
+- [x] Создать `.env.example` с описанием всех переменных
+- [x] Создать `src/lib/server/config.ts` с константами (базовая реализация)
+- [x] Заменить хардкод в `news-service.ts`:
   - `RSS_TIMEOUT_MS` (сейчас 8000)
   - `CACHE_TTL_MS` (сейчас 5 * 60 * 1000)
-  - `MAX_SNIPPET_LENGTH` (сейчас 200)
-- [ ] Использовать `$env/static/private` или `$env/dynamic/private`
-- [ ] Добавить `.env` в `.gitignore` (проверить что уже есть)
+  - `MAX_SNIPPET_LENGTH` (сейчас 300)
+- [ ] Использовать `$env/static/private` или `$env/dynamic/private` (Stage 3)
+- [x] `.env` уже в `.gitignore`
 
 **Файлы для изменения:**
 - `src/lib/server/news-service.ts`
@@ -107,20 +108,10 @@ src/
 - `.gitignore` (проверить)
 
 #### 2.3 CSP-заголовки
-- [ ] Создать `src/hooks.server.ts` (если не существует)
-- [ ] Добавить Content-Security-Policy через `handle` hook:
-  ```typescript
-  // Минимальный CSP
-  response.headers.set('Content-Security-Policy',
-    "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline'; " +  // unsafe-inline для theme script
-    "style-src 'self' 'unsafe-inline'; " +
-    "img-src 'self' https: data:; " +
-    "font-src 'self'; " +
-    "connect-src 'self'"
-  );
-  ```
-- [ ] Проверить что тема и View Transitions работают с CSP
+- [x] Создать `src/hooks.server.ts`
+- [x] Добавить Content-Security-Policy через `handle` hook
+- [x] Добавить X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
+- [x] Проверить что тема и View Transitions работают с CSP
 
 **Файлы для изменения:**
 - `src/hooks.server.ts` (новый или модификация)
@@ -128,18 +119,19 @@ src/
 ### P1 — Важно
 
 #### 2.4 Sitemap.xml
-- [ ] Создать `src/routes/sitemap.xml/+server.ts`
-- [ ] Генерировать XML со всеми текущими URL (/  и /news/[id])
-- [ ] Добавить ссылку на sitemap в `static/robots.txt`
+- [x] Создать `src/routes/sitemap.xml/+server.ts`
+- [x] Генерировать XML со всеми текущими URL (/  и /news/[id])
+- [x] Добавить ссылку на sitemap в `static/robots.txt`
 
 **Файлы для изменения:**
 - `src/routes/sitemap.xml/+server.ts` (новый)
 - `static/robots.txt`
 
 #### 2.5 Health-check endpoint
-- [ ] Создать `src/routes/api/health/+server.ts`
-- [ ] Возвращать JSON: `{ status: 'ok', timestamp, feedsCount, cacheAge }`
-- [ ] В будущем добавить проверку БД
+- [x] Создать `src/routes/api/health/+server.ts`
+- [x] Возвращать JSON: `{ status: 'ok', timestamp, feedsCount, cacheAge, cacheSize }`
+- [x] Добавить `getServiceStatus()` в news-service
+- [ ] В будущем добавить проверку БД (Stage 3)
 
 **Файлы для изменения:**
 - `src/routes/api/health/+server.ts` (новый)
@@ -147,12 +139,12 @@ src/
 ### P2 — Желательно
 
 #### 2.6 Тесты для news-service.ts
-- [ ] Создать `src/lib/server/news-service.test.ts`
+- [ ] Создать `src/lib/server/news-service.test.ts` (отложено до Stage 3)
 - [ ] Мокать fetch для тестирования `fetchAllNews`
 - [ ] Тестировать: успешный fetch, таймаут, пустой фид, кеширование
 
 #### 2.7 Canonical URLs на главной
-- [ ] Добавить `<link rel="canonical">` на главную страницу в `+page.svelte`
+- [x] Добавить `<link rel="canonical">` на главную страницу в `+page.svelte`
 
 ---
 
