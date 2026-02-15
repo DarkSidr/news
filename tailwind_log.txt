@@ -1,7 +1,0 @@
-Need to install the following packages:
-svelte-add@2.7.3
-Ok to proceed? (y) npm warn deprecated svelte-add@2.7.3: svelte-add has be merged together with create-svelte to become the Svelte CLI sv. The work continues in the sv repo over at https://github.com/sveltejs/cli
-npm warn deprecated @svelte-add/ast-manipulation@2.2.4: svelte-add has be merged together with create-svelte to become the Svelte CLI sv. The work continues in the sv repo over at https://github.com/sveltejs/cli
-npm warn deprecated @svelte-add/core@2.10.4: svelte-add has be merged together with create-svelte to become the Svelte CLI sv. The work continues in the sv repo over at https://github.com/sveltejs/cli
-npm warn deprecated @svelte-add/ast-tooling@2.1.7: svelte-add has be merged together with create-svelte to become the Svelte CLI sv. The work continues in the sv repo over at https://github.com/sveltejs/cli
-error: unknown option '--typography'
