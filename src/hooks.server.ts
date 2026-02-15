@@ -12,7 +12,44 @@ startDevScheduler();
  * 
  * In production, consider using nonce-based CSP
  */
+import { env } from '$env/dynamic/private';
+
+/**
+ * Basic Auth check
+ */
+function isAuthorized(request: Request): boolean {
+  const user = env.SITE_PROTECTION_USER;
+  const pass = env.SITE_PROTECTION_PASSWORD;
+
+  if (!user || !pass) {
+    return true; // Protection disabled if vars not set
+  }
+
+  const auth = request.headers.get('authorization');
+  if (!auth) {
+    return false;
+  }
+
+  const [scheme, encoded] = auth.split(' ');
+  if (!scheme || scheme.toLowerCase() !== 'basic' || !encoded) {
+    return false;
+  }
+
+  const [u, p] = Buffer.from(encoded, 'base64').toString().split(':');
+  return u === user && p === pass;
+}
+
 export const handle: Handle = async ({ event, resolve }) => {
+  // Basic Auth Protection
+  if (!isAuthorized(event.request)) {
+    return new Response('Unauthorized', {
+      status: 401,
+      headers: {
+        'WWW-Authenticate': 'Basic realm="Restricted Area"'
+      }
+    });
+  }
+
   const response = await resolve(event);
 
   // Content Security Policy
