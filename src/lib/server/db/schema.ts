@@ -5,7 +5,8 @@ import {
   text,
   timestamp,
   boolean,
-  integer
+  integer,
+  index
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -26,31 +27,44 @@ export const feedSources = pgTable('feed_sources', {
 /**
  * Статьи/новости
  */
-export const articles = pgTable('articles', {
-  // ID в формате SourceName:guid или SourceName:link (из buildNewsId)
-  id: varchar('id', { length: 500 }).primaryKey(),
-  sourceId: integer('source_id')
-    .references(() => feedSources.id, { onDelete: 'cascade' })
-    .notNull(),
-  title: text('title').notNull(),
-  link: text('link').notNull().unique(),
-  pubDate: timestamp('pub_date', { withTimezone: true }).notNull(),
-  content: text('content'),
-  contentSnippet: varchar('content_snippet', { length: 500 }),
-  imageUrl: text('image_url'),
-  language: varchar('language', { length: 10 }).default('en').notNull(),
-  // Поля для перевода (Stage 4)
-  translatedTitle: text('translated_title'),
-  translatedSnippet: text('translated_snippet'),
-  isTranslated: boolean('is_translated').default(false).notNull(),
-  // Поля для AI-суммаризации (Stage 7)
-  summary: text('summary'),
-  isSummarized: boolean('is_summarized').default(false).notNull(),
-  summaryModel: varchar('summary_model', { length: 50 }),
-  // Мета
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
-});
+export const articles = pgTable(
+  'articles',
+  {
+    // ID в формате SourceName:guid или SourceName:link (из buildNewsId)
+    id: varchar('id', { length: 500 }).primaryKey(),
+    sourceId: integer('source_id')
+      .references(() => feedSources.id, { onDelete: 'cascade' })
+      .notNull(),
+    title: text('title').notNull(),
+    link: text('link').notNull().unique(),
+    pubDate: timestamp('pub_date', { withTimezone: true }).notNull(),
+    content: text('content'),
+    contentSnippet: varchar('content_snippet', { length: 500 }),
+    imageUrl: text('image_url'),
+    language: varchar('language', { length: 10 }).default('en').notNull(),
+    // Поля для перевода (Stage 4)
+    translatedTitle: text('translated_title'),
+    translatedSnippet: text('translated_snippet'),
+    isTranslated: boolean('is_translated').default(false).notNull(),
+    // Поля для AI-суммаризации (Stage 7)
+    summary: text('summary'),
+    isSummarized: boolean('is_summarized').default(false).notNull(),
+    summaryModel: varchar('summary_model', { length: 50 }),
+    // Мета
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull()
+  },
+  (table) => ({
+    articlesPubDateIdx: index('articles_pub_date_idx').on(table.pubDate),
+    articlesLanguageTranslatedIdx: index('articles_language_is_translated_idx').on(
+      table.language,
+      table.isTranslated
+    )
+  })
+);
 
 /**
  * Логи фетчинга

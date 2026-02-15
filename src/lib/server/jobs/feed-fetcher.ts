@@ -1,10 +1,23 @@
 import { eq } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import sanitizeHtml from 'sanitize-html';
+import type { NewsItem } from '$lib/types';
 import { DEFAULT_RSS_FEEDS } from '../sources/rss-source';
 import * as schema from '../db/schema';
 import { articles, feedSources, fetchLogs } from '../db/schema';
-import type { NewsItem } from '$lib/types';
-import { fetchAllNews, invalidateCache } from '../news-service';
+import { BLOCKED_DOMAINS, MAX_SNIPPET_LENGTH } from '../config';
+import {
+  stripHtml,
+  buildNewsId,
+  normalizePubDate,
+  extractImage,
+  isLowQuality,
+  stripReadMoreLinks,
+  type FeedItemLike
+} from '../news-utils';
+import { RssSource } from '../sources/rss-source';
+import type { RawNewsItem } from '../types';
+import type { FeedSource as DbFeedSource } from '../db/schema';
 
 /**
  * Результат фетчинга
@@ -56,38 +69,30 @@ export class FeedFetcher {
   /**
    * Сохранить статьи в БД (upsert)
    */
-  async saveArticles(items: NewsItem[], sourceId: number): Promise<number> {
-    let newItemsCount = 0;
-
-    for (const item of items) {
-      try {
-        const articleData = {
-          id: item.id,
-          sourceId: sourceId,
-          title: item.title,
-          link: item.link,
-          pubDate: new Date(item.pubDate),
-          content: item.content || null,
-          contentSnippet: item.contentSnippet || null,
-          imageUrl: item.imageUrl || null,
-          language: this.detectLanguage(item.source)
-        };
-
-        const result = await this.db
-          .insert(articles)
-          .values(articleData)
-          .onConflictDoNothing({ target: articles.id })
-          .returning({ id: articles.id });
-
-        if (result.length > 0) {
-          newItemsCount++;
-        }
-      } catch (error) {
-        console.error(`[FeedFetcher] Error saving article ${item.id}:`, error);
-      }
+  async saveArticles(items: NewsItem[], sourceId: number, language: string): Promise<number> {
+    if (items.length === 0) {
+      return 0;
     }
 
-    return newItemsCount;
+    const articleData = items.map((item) => ({
+      id: item.id,
+      sourceId: sourceId,
+      title: item.title,
+      link: item.link,
+      pubDate: new Date(item.pubDate),
+      content: item.content || null,
+      contentSnippet: item.contentSnippet || null,
+      imageUrl: item.imageUrl || null,
+      language
+    }));
+
+    const result = await this.db
+      .insert(articles)
+      .values(articleData)
+      .onConflictDoNothing({ target: articles.id })
+      .returning({ id: articles.id });
+
+    return result.length;
   }
 
   /**
@@ -136,23 +141,16 @@ export class FeedFetcher {
 
     const results: FetchResult[] = [];
 
-    // Force fresh fetch for cron job, bypassing user-facing in-memory cache.
-    invalidateCache();
-    const allNews = await fetchAllNews(this.fetchFn);
-
-    const newsBySource = new Map<string, NewsItem[]>();
-    for (const news of allNews) {
-      const existing = newsBySource.get(news.source) || [];
-      existing.push(news);
-      newsBySource.set(news.source, existing);
-    }
-
     for (const dbSource of dbSources) {
       const sourceStartTime = Date.now();
-      const sourceNews = newsBySource.get(dbSource.name) || [];
 
       try {
-        const newItemsCount = await this.saveArticles(sourceNews, dbSource.id);
+        const sourceNews = await this.fetchSourceNews(dbSource);
+        const newItemsCount = await this.saveArticles(
+          sourceNews,
+          dbSource.id,
+          dbSource.language
+        );
         await this.updateSourceLastFetched(dbSource.id);
 
         const durationMs = Date.now() - sourceStartTime;
@@ -178,7 +176,7 @@ export class FeedFetcher {
         const result: FetchResult = {
           sourceId: dbSource.id,
           sourceName: dbSource.name,
-          itemsCount: sourceNews.length,
+          itemsCount: 0,
           newItemsCount: 0,
           error: err,
           durationMs
@@ -201,10 +199,89 @@ export class FeedFetcher {
   }
 
   /**
-   * Определить язык по названию источника
+   * Фетчинг и подготовка новостей для конкретного источника
    */
-  private detectLanguage(sourceName: string): string {
-    const ruSources = ['OpenNET', 'Habr'];
-    return ruSources.includes(sourceName) ? 'ru' : 'en';
+  private async fetchSourceNews(source: DbFeedSource): Promise<NewsItem[]> {
+    if (source.type !== 'rss') {
+      console.warn(`[FeedFetcher] Unsupported source type "${source.type}" for ${source.name}`);
+      return [];
+    }
+
+    const rssSource = new RssSource(source.name, source.url, {
+      language: source.language,
+      isActive: source.isActive
+    });
+
+    const rawItems = await rssSource.fetch(this.fetchFn);
+    const transformed = rawItems.map((rawItem, index) =>
+      this.transformRawNewsItem(rawItem, source.name, index)
+    );
+
+    const filtered = transformed.filter((item) => {
+      if (isLowQuality(item)) {
+        return false;
+      }
+
+      try {
+        const hostname = new URL(item.link).hostname;
+        return !BLOCKED_DOMAINS.some((domain) => hostname.includes(domain));
+      } catch {
+        return true;
+      }
+    });
+
+    return filtered.map((item) => {
+      let content = item.content;
+
+      if (item.imageUrl && content) {
+        const cleanUrl = item.imageUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const imgRegex = new RegExp(`<img[^>]+src=["']${cleanUrl}["'][^>]*>`, 'i');
+
+        content = content.replace(imgRegex, '');
+        content = content.replace(/<figure[^>]*>\s*<\/figure>/gi, '');
+      }
+
+      if (content) {
+        content = stripReadMoreLinks(content);
+      }
+
+      return { ...item, content };
+    });
+  }
+
+  /**
+   * Преобразование сырых RSS-данных в формат NewsItem
+   */
+  private transformRawNewsItem(raw: RawNewsItem, sourceName: string, index: number): NewsItem {
+    const feedItemLike: FeedItemLike = {
+      guid: raw.guid,
+      link: raw.link,
+      title: raw.title,
+      pubDate: raw.pubDate,
+      enclosure: raw.enclosure,
+      'media:content': raw['media:content'],
+      content: raw.content,
+      contentSnippet: raw.contentSnippet,
+      'content:encoded': raw['content:encoded']
+    };
+
+    const fullContent = raw['content:encoded'] || raw.content || raw.contentSnippet || '';
+
+    return {
+      id: buildNewsId(sourceName, feedItemLike, index),
+      title: stripHtml(raw.title || 'Без заголовка'),
+      link: raw.link,
+      pubDate: normalizePubDate(raw.pubDate),
+      contentSnippet: stripHtml(raw.contentSnippet || fullContent).slice(0, MAX_SNIPPET_LENGTH),
+      source: sourceName,
+      imageUrl: extractImage(feedItemLike),
+      content: sanitizeHtml(fullContent, {
+        allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'figure', 'figcaption']),
+        allowedAttributes: {
+          ...sanitizeHtml.defaults.allowedAttributes,
+          img: ['src', 'alt', 'title', 'width', 'height']
+        }
+      })
+    };
   }
 }
