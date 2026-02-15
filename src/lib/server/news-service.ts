@@ -40,6 +40,7 @@ function getConfig(): NewsServiceConfig {
 function transformNewsItem(
   raw: RawNewsItem,
   sourceName: string,
+  sourceLanguage: string,
   index: number,
   config: NewsServiceConfig
 ): NewsItem {
@@ -68,6 +69,8 @@ function transformNewsItem(
       config.maxSnippetLength
     ),
     source: sourceName,
+    language: sourceLanguage,
+    isTranslated: false,
     imageUrl: extractImage(feedItemLike),
     content: sanitizeHtml(fullContent, {
       allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'figure', 'figcaption']),
@@ -111,7 +114,7 @@ async function runPipeline(
   for (const { source, rawItems } of fetchResults) {
     for (let i = 0; i < rawItems.length; i++) {
       const raw = rawItems[i];
-      const item = transformNewsItem(raw, source.name, i, config);
+      const item = transformNewsItem(raw, source.name, source.language, i, config);
       allItems.push(item);
     }
   }

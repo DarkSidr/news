@@ -10,8 +10,21 @@
   
   let item = $derived(data.newsItem);
   let pageUrl = $derived(data.pageUrl);
-  let safeContent = $derived(item.content ?? '');
-  let safeDescription = $derived(item.contentSnippet || 'Подробности новости на TechNews.');
+  let showOriginal = $state(false);
+  let hasTranslation = $derived(
+    Boolean(
+      item.isTranslated && (item.originalTitle || item.originalContentSnippet || item.originalContent)
+    )
+  );
+  let displayTitle = $derived(showOriginal && item.originalTitle ? item.originalTitle : item.title);
+  let displaySnippet = $derived(
+    showOriginal && item.originalContentSnippet ? item.originalContentSnippet : item.contentSnippet
+  );
+  let displayContent = $derived(
+    showOriginal && item.originalContent ? item.originalContent : item.content ?? ''
+  );
+  let safeContent = $derived(displayContent);
+  let safeDescription = $derived(displaySnippet || 'Подробности новости на TechNews.');
   let publishedIso = $derived(new Date(item.pubDate).toISOString());
   let timeAgo = $derived(
     formatDistanceToNow(new Date(item.pubDate), { addSuffix: true, locale: ru })
@@ -19,7 +32,7 @@
   let newsArticleSchema = $derived({
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
-    headline: item.title,
+    headline: displayTitle,
     description: safeDescription,
     datePublished: publishedIso,
     dateModified: publishedIso,
@@ -37,11 +50,11 @@
 </script>
 
 <svelte:head>
-  <title>{item.title} | TechNews</title>
+  <title>{displayTitle} | TechNews</title>
   <meta name="description" content={safeDescription} />
   <meta name="robots" content="index,follow,max-image-preview:large" />
   <link rel="canonical" href={pageUrl} />
-  <meta property="og:title" content={item.title} />
+  <meta property="og:title" content={displayTitle} />
   <meta property="og:description" content={safeDescription} />
   <meta property="og:type" content="article" />
   <meta property="og:url" content={pageUrl} />
@@ -79,8 +92,16 @@
                 </span>
              </div>
              <h1 class="text-3xl md:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white leading-tight tracking-tight mb-6 max-w-5xl">
-                {item.title}
+                {displayTitle}
              </h1>
+             {#if hasTranslation}
+               <button
+                 class="mb-6 inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
+                 onclick={() => showOriginal = !showOriginal}
+               >
+                 {showOriginal ? 'Показать перевод' : 'Показать оригинал'}
+               </button>
+             {/if}
              
              <div class="flex flex-wrap items-center gap-6 text-sm md:text-base text-gray-500 dark:text-gray-400 font-medium">
                 <div class="flex items-center gap-2">
@@ -101,7 +122,7 @@
         <div class="max-w-3xl mx-auto">
             <!-- Lead / Snippet -->
             <p class="text-xl md:text-2xl leading-relaxed text-gray-600 dark:text-gray-300 font-serif mb-10 border-l-4 border-blue-500 pl-6 italic">
-                {item.contentSnippet}
+                {displaySnippet}
             </p>
 
             {#if item.imageUrl}

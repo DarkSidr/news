@@ -1,11 +1,11 @@
-import { eq } from 'drizzle-orm';
+import { and, desc, eq, isNull, ne, or } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import sanitizeHtml from 'sanitize-html';
 import type { NewsItem } from '$lib/types';
 import { DEFAULT_RSS_FEEDS } from '../sources/rss-source';
 import * as schema from '../db/schema';
 import { articles, feedSources, fetchLogs } from '../db/schema';
-import { BLOCKED_DOMAINS, MAX_SNIPPET_LENGTH } from '../config';
+import { BLOCKED_DOMAINS, MAX_SNIPPET_LENGTH, TRANSLATION_MAX_PER_RUN } from '../config';
 import {
   stripHtml,
   buildNewsId,
@@ -18,6 +18,8 @@ import {
 import { RssSource } from '../sources/rss-source';
 import type { RawNewsItem } from '../types';
 import type { FeedSource as DbFeedSource } from '../db/schema';
+import type { TranslationService } from '../services/translation-service';
+import { createTranslationService, isTranslationConfigured } from '../services/translation-service';
 
 /**
  * Результат фетчинга
@@ -27,6 +29,7 @@ export interface FetchResult {
   sourceName: string;
   itemsCount: number;
   newItemsCount: number;
+  translatedCount: number;
   error?: string;
   durationMs: number;
 }
@@ -37,10 +40,12 @@ export interface FetchResult {
 export class FeedFetcher {
   private db: NodePgDatabase<typeof schema>;
   private fetchFn: typeof fetch;
+  private translationService: TranslationService | null;
 
   constructor(db: NodePgDatabase<typeof schema>, fetchFn: typeof fetch) {
     this.db = db;
     this.fetchFn = fetchFn;
+    this.translationService = createTranslationService(fetchFn);
   }
 
   /**
@@ -140,8 +145,10 @@ export class FeedFetcher {
     }
 
     const results: FetchResult[] = [];
+    let translationBudget = TRANSLATION_MAX_PER_RUN;
 
-    for (const dbSource of dbSources) {
+    for (let sourceIndex = 0; sourceIndex < dbSources.length; sourceIndex++) {
+      const dbSource = dbSources[sourceIndex];
       const sourceStartTime = Date.now();
 
       try {
@@ -151,6 +158,15 @@ export class FeedFetcher {
           dbSource.id,
           dbSource.language
         );
+        const sourcesLeft = dbSources.length - sourceIndex;
+        const sourceBudget =
+          translationBudget > 0 ? Math.max(1, Math.floor(translationBudget / sourcesLeft)) : 0;
+        const translatedCount = await this.translatePendingForSource(
+          dbSource.id,
+          dbSource.language,
+          sourceBudget
+        );
+        translationBudget -= translatedCount;
         await this.updateSourceLastFetched(dbSource.id);
 
         const durationMs = Date.now() - sourceStartTime;
@@ -160,6 +176,7 @@ export class FeedFetcher {
           sourceName: dbSource.name,
           itemsCount: sourceNews.length,
           newItemsCount,
+          translatedCount,
           durationMs
         };
 
@@ -178,6 +195,7 @@ export class FeedFetcher {
           sourceName: dbSource.name,
           itemsCount: 0,
           newItemsCount: 0,
+          translatedCount: 0,
           error: err,
           durationMs
         };
@@ -190,9 +208,11 @@ export class FeedFetcher {
 
     const totalDuration = Date.now() - startTime;
     const totalNew = results.reduce((sum, r) => sum + r.newItemsCount, 0);
+    const totalTranslated = results.reduce((sum, r) => sum + r.translatedCount, 0);
 
     console.log(
-      `[FeedFetcher] Completed in ${totalDuration}ms. ${results.length} sources, ${totalNew} new articles`
+      `[FeedFetcher] Completed in ${totalDuration}ms. ${results.length} sources, ` +
+      `${totalNew} new articles, ${totalTranslated} translated`
     );
 
     return results;
@@ -214,7 +234,7 @@ export class FeedFetcher {
 
     const rawItems = await rssSource.fetch(this.fetchFn);
     const transformed = rawItems.map((rawItem, index) =>
-      this.transformRawNewsItem(rawItem, source.name, index)
+      this.transformRawNewsItem(rawItem, source.name, source.language, index)
     );
 
     const filtered = transformed.filter((item) => {
@@ -252,7 +272,12 @@ export class FeedFetcher {
   /**
    * Преобразование сырых RSS-данных в формат NewsItem
    */
-  private transformRawNewsItem(raw: RawNewsItem, sourceName: string, index: number): NewsItem {
+  private transformRawNewsItem(
+    raw: RawNewsItem,
+    sourceName: string,
+    sourceLanguage: string,
+    index: number
+  ): NewsItem {
     const feedItemLike: FeedItemLike = {
       guid: raw.guid,
       link: raw.link,
@@ -274,6 +299,8 @@ export class FeedFetcher {
       pubDate: normalizePubDate(raw.pubDate),
       contentSnippet: stripHtml(raw.contentSnippet || fullContent).slice(0, MAX_SNIPPET_LENGTH),
       source: sourceName,
+      language: sourceLanguage,
+      isTranslated: false,
       imageUrl: extractImage(feedItemLike),
       content: sanitizeHtml(fullContent, {
         allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'figure', 'figcaption']),
@@ -283,5 +310,140 @@ export class FeedFetcher {
         }
       })
     };
+  }
+
+  /**
+   * Перевести непереведённые статьи источника (с лимитом на прогон)
+   */
+  private async translatePendingForSource(
+    sourceId: number,
+    sourceLanguage: string,
+    budget: number
+  ): Promise<number> {
+    if (budget <= 0 || sourceLanguage === 'ru') {
+      return 0;
+    }
+
+    if (!this.translationService || !isTranslationConfigured()) {
+      return 0;
+    }
+
+    const pending = await this.db
+      .select({
+        id: articles.id,
+        title: articles.title,
+        contentSnippet: articles.contentSnippet,
+        content: articles.content,
+        language: articles.language
+      })
+      .from(articles)
+      .where(
+        and(
+          eq(articles.sourceId, sourceId),
+          or(eq(articles.isTranslated, false), isNull(articles.translatedContent)),
+          ne(articles.language, 'ru')
+        )
+      )
+      .orderBy(desc(articles.pubDate))
+      .limit(budget);
+
+    if (pending.length === 0) {
+      return 0;
+    }
+
+    let translatedCount = 0;
+    const groupedByLanguage = new Map<string, typeof pending>();
+
+    for (const item of pending) {
+      const language = item.language || sourceLanguage;
+      const group = groupedByLanguage.get(language);
+      if (group) {
+        group.push(item);
+      } else {
+        groupedByLanguage.set(language, [item]);
+      }
+    }
+
+    for (const [language, items] of groupedByLanguage.entries()) {
+      const titles = items.map((item) => item.title);
+      const snippets = items.map((item) => item.contentSnippet ?? '');
+      const contents = items.map((item) => stripHtml(item.content ?? ''));
+
+      try {
+        const translatedTitles = await this.translationService.translateBatch(
+          titles,
+          language,
+          'ru'
+        );
+        const translatedSnippets = await this.translationService.translateBatch(
+          snippets,
+          language,
+          'ru'
+        );
+        const translatedContents = await this.translationService.translateBatch(
+          contents,
+          language,
+          'ru'
+        );
+
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          const translatedTitle = translatedTitles[i];
+          const translatedSnippet = translatedSnippets[i];
+          const translatedContent = translatedContents[i];
+
+          if (
+            !translatedTitle ||
+            (item.contentSnippet && !translatedSnippet) ||
+            (item.content && !translatedContent)
+          ) {
+            continue;
+          }
+
+          await this.db
+            .update(articles)
+            .set({
+              translatedTitle,
+              translatedSnippet: item.contentSnippet ? translatedSnippet : null,
+              translatedContent: item.content
+                ? this.convertTranslatedTextToHtml(translatedContent)
+                : null,
+              isTranslated: true
+            })
+            .where(eq(articles.id, item.id));
+
+          translatedCount += 1;
+        }
+      } catch (error) {
+        console.error(`[FeedFetcher] Translation failed for source ${sourceId}:`, error);
+      }
+    }
+
+    return translatedCount;
+  }
+
+  /**
+   * Преобразовать переведённый plain text в безопасный HTML для рендера в статье
+   */
+  private convertTranslatedTextToHtml(text: string): string {
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+    const normalized = escaped.trim();
+    if (!normalized) {
+      return '<p></p>';
+    }
+
+    const paragraphs = normalized
+      .split(/\n{2,}/)
+      .map((paragraph) => paragraph.trim())
+      .filter((paragraph) => paragraph.length > 0)
+      .map((paragraph) => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`);
+
+    return paragraphs.length > 0 ? paragraphs.join('') : `<p>${normalized}</p>`;
   }
 }

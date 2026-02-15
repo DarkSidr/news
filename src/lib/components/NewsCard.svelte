@@ -9,6 +9,8 @@
   let timeAgo = $derived(
     formatDistanceToNow(new Date(news.pubDate), { addSuffix: true, locale: ru })
   );
+  let languageFlag = $derived(news.isTranslated ? '🇷🇺' : news.language === 'ru' ? '🇷🇺' : '🇬🇧');
+  let languageLabel = $derived(news.isTranslated ? 'Доступен перевод' : 'Оригинал');
 </script>
 
 <article class="break-inside-avoid mb-6 transition-all hover:-translate-y-1 hover:shadow-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden flex flex-col h-auto backdrop-blur-sm dark:bg-opacity-80 group">
@@ -35,6 +37,9 @@
   <div class="p-5 flex flex-col gap-3">
     <div class="flex justify-between items-start text-xs text-gray-500 dark:text-gray-400">
       <span>{timeAgo}</span>
+      <span class="inline-flex items-center gap-1" title={languageLabel}>
+        <span aria-hidden="true">{languageFlag}</span>
+      </span>
     </div>
 
     <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight">

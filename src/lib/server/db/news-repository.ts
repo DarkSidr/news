@@ -6,12 +6,17 @@ import { articles, feedSources } from './schema';
 interface DbNewsRow {
   id: string;
   title: string;
+  translatedTitle: string | null;
   link: string;
   pubDate: Date;
   contentSnippet: string | null;
+  translatedSnippet: string | null;
   imageUrl: string | null;
   content: string | null;
+  translatedContent: string | null;
   source: string;
+  language: string;
+  isTranslated: boolean;
 }
 
 interface DbSitemapRow {
@@ -30,15 +35,26 @@ function toIsoString(value: Date): string {
 }
 
 function toNewsItem(row: DbNewsRow): NewsItem {
+  const hasTitleTranslation = Boolean(row.translatedTitle?.trim());
+  const hasSnippetTranslation = Boolean(row.translatedSnippet?.trim());
+  const hasContentTranslation = Boolean(row.translatedContent?.trim());
+  const hasAnyTranslation =
+    hasTitleTranslation || hasSnippetTranslation || hasContentTranslation;
+
   return {
     id: row.id,
-    title: row.title,
+    title: hasTitleTranslation ? row.translatedTitle! : row.title,
     link: row.link,
     pubDate: toIsoString(row.pubDate),
-    contentSnippet: row.contentSnippet ?? '',
+    contentSnippet: hasSnippetTranslation ? row.translatedSnippet! : row.contentSnippet ?? '',
     source: row.source,
+    language: row.language,
+    isTranslated: row.isTranslated && hasAnyTranslation,
+    originalTitle: hasTitleTranslation ? row.title : undefined,
+    originalContentSnippet: hasSnippetTranslation ? row.contentSnippet ?? '' : undefined,
+    originalContent: hasContentTranslation ? row.content ?? '' : undefined,
     imageUrl: row.imageUrl ?? undefined,
-    content: row.content ?? undefined
+    content: hasContentTranslation ? row.translatedContent! : row.content ?? undefined
   };
 }
 
@@ -47,12 +63,17 @@ export async function getLatestNews(limit = 50): Promise<NewsItem[]> {
     .select({
       id: articles.id,
       title: articles.title,
+      translatedTitle: articles.translatedTitle,
       link: articles.link,
       pubDate: articles.pubDate,
       contentSnippet: articles.contentSnippet,
+      translatedSnippet: articles.translatedSnippet,
       imageUrl: articles.imageUrl,
       content: articles.content,
-      source: feedSources.name
+      translatedContent: articles.translatedContent,
+      source: feedSources.name,
+      language: articles.language,
+      isTranslated: articles.isTranslated
     })
     .from(articles)
     .innerJoin(feedSources, eq(articles.sourceId, feedSources.id))
@@ -63,12 +84,17 @@ export async function getLatestNews(limit = 50): Promise<NewsItem[]> {
     toNewsItem({
       id: row.id,
       title: row.title,
+      translatedTitle: row.translatedTitle,
       link: row.link,
       pubDate: row.pubDate,
       contentSnippet: row.contentSnippet,
+      translatedSnippet: row.translatedSnippet,
       imageUrl: row.imageUrl,
       content: row.content,
-      source: row.source
+      translatedContent: row.translatedContent,
+      source: row.source,
+      language: row.language,
+      isTranslated: row.isTranslated
     })
   );
 }
@@ -78,12 +104,17 @@ export async function getNewsById(id: string): Promise<NewsItem | null> {
     .select({
       id: articles.id,
       title: articles.title,
+      translatedTitle: articles.translatedTitle,
       link: articles.link,
       pubDate: articles.pubDate,
       contentSnippet: articles.contentSnippet,
+      translatedSnippet: articles.translatedSnippet,
       imageUrl: articles.imageUrl,
       content: articles.content,
-      source: feedSources.name
+      translatedContent: articles.translatedContent,
+      source: feedSources.name,
+      language: articles.language,
+      isTranslated: articles.isTranslated
     })
     .from(articles)
     .innerJoin(feedSources, eq(articles.sourceId, feedSources.id))
@@ -99,12 +130,17 @@ export async function getNewsById(id: string): Promise<NewsItem | null> {
   return toNewsItem({
     id: row.id,
     title: row.title,
+    translatedTitle: row.translatedTitle,
     link: row.link,
     pubDate: row.pubDate,
     contentSnippet: row.contentSnippet,
+    translatedSnippet: row.translatedSnippet,
     imageUrl: row.imageUrl,
     content: row.content,
-    source: row.source
+    translatedContent: row.translatedContent,
+    source: row.source,
+    language: row.language,
+    isTranslated: row.isTranslated
   });
 }
 

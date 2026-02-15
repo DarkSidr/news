@@ -45,6 +45,7 @@ export const articles = pgTable(
     // Поля для перевода (Stage 4)
     translatedTitle: text('translated_title'),
     translatedSnippet: text('translated_snippet'),
+    translatedContent: text('translated_content'),
     isTranslated: boolean('is_translated').default(false).notNull(),
     // Поля для AI-суммаризации (Stage 7)
     summary: text('summary'),

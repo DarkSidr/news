@@ -5,6 +5,11 @@ export interface NewsItem {
   pubDate: string;
   contentSnippet: string;
   source: string;
+  language?: string;
+  isTranslated?: boolean;
+  originalTitle?: string;
+  originalContentSnippet?: string;
+  originalContent?: string;
   imageUrl?: string;
   content?: string;
 }
