@@ -9,12 +9,14 @@
 Перед началом работы **всегда** прочитай эти файлы (в указанном порядке):
 
 1. `AI_MEMORY.md` — текущий этап, прогресс, последние решения
-2. `ROADMAP.md` — **детальный поэтапный план** (Stage 2–12) с задачами, файлами, SQL-схемами, зависимостями. Это главный рабочий документ
-3. `TECHNICAL_PLAN.md` — целевая архитектура и стратегические требования
-4. `MINOR_ISSUES.md` — backlog мелких рекомендаций (P2+)
+2. `ROADMAP.md` — план развития (Stage 5-12)
+3. `ARCHITECTURE.md` — текущий стек и архитектура
+4. `MINOR_ISSUES.md` — backlog мелких рекомендаций
 5. Последний файл в `ai_code_reviews/` — актуальные замечания
 
 **Не начинай писать код, пока не прочитал `AI_MEMORY.md` и `ROADMAP.md`.**
+
+**Не читать:** `docs/archive/*` — устаревшие документы
 
 ## Ключевые правила
 - Всегда отвечай на русском языке
@@ -27,34 +29,38 @@
 ```
 src/
 ├── lib/
-│   ├── types.ts                    # Типы (NewsItem и др.)
+│   ├── types.ts                  # Типы (NewsItem)
 │   ├── server/
-│   │   ├── news-service.ts         # Основной сервис (fetch + cache + parse)
-│   │   ├── news-utils.ts           # Утилиты (strip, normalize, extract)
-│   │   └── news-utils.test.ts      # Unit-тесты (Vitest)
+│   │   ├── config.ts             # Env-переменные
+│   │   ├── db/                   # PostgreSQL + Drizzle
+│   │   ├── sources/              # RSS источники
+│   │   ├── services/             # AI-перевод
+│   │   ├── jobs/                 # Cron-сборщик
+│   │   └── news-utils.ts         # Утилиты
 │   └── components/
-│       ├── NewsCard.svelte          # Карточка новости
-│       ├── MasonryGrid.svelte       # Masonry layout
-│       └── ThemeToggle.svelte       # Переключатель темы
-├── routes/
-│   ├── +page.svelte                 # Главная (лента)
-│   ├── +page.server.ts              # Server load
-│   ├── +layout.svelte               # Layout (Schema.org, meta)
-│   ├── +error.svelte                # Error page
-│   └── news/[id]/                   # Деталь новости
-├── service-worker.ts                # PWA Service Worker
-└── app.d.ts                         # SvelteKit types
+│       ├── NewsCard.svelte       # Карточка новости
+│       ├── MasonryGrid.svelte    # Grid layout
+│       └── ThemeToggle.svelte    # Dark/Light переключатель
+└── routes/
+    ├── +page.svelte              # Главная (лента)
+    ├── +page.server.ts           # Server load
+    ├── +layout.svelte            # Layout (Schema.org)
+    ├── +error.svelte             # Error page
+    ├── api/                      # API endpoints
+    ├── sitemap.xml/+server.ts    # Dynamic sitemap
+    └── robots.txt/+server.ts     # Dynamic robots.txt
 ```
+
+**Важно:** Детальной страницы `/news/[id]` больше нет — карточки ведут напрямую на источник.
 
 ## Режимы работы
 
 ### Режим "Реализация" (переходим к следующему этапу)
 1. Определи текущий этап из `AI_MEMORY.md`
 2. Открой `ROADMAP.md` → найди следующий Stage
-3. Учти зависимости (матрица в конце ROADMAP.md)
-4. Выполняй задачи по приоритету P0 → P1 → P2
-5. После каждого блока: `npm run check && npm run build && npm run test`
-6. Отметь `[x]` в `ROADMAP.md`, обнови `AI_MEMORY.md`
+3. Выполняй задачи по приоритету P0 → P1 → P2
+4. После каждого блока: `npm run check && npm run build && npm run test:run`
+5. Отметь `[x]` в `ROADMAP.md`, обнови `AI_MEMORY.md`
 
 ### Режим "Исправь ревью"
 1. Прочитай последнее ревью из `ai_code_reviews/`
@@ -76,7 +82,7 @@ src/
 
 ## Команды проверки
 ```bash
-npm run check && npm run build && npm run test
+npm run check && npm run build && npm run test:run
 ```
 
 ## Формат коммитов
@@ -91,3 +97,7 @@ npm run check && npm run build && npm run test
 - Не использовать destructive git-команды
 - При конфликтах — остановиться и спросить
 - Всегда на русском
+
+---
+
+**Обновлено:** 16.02.2026 (после Stage 7 Overhaul)

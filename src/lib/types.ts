@@ -1,4 +1,4 @@
- export interface NewsItem {
+export interface NewsItem {
   id: string;
   title: string;
   link: string;
@@ -9,6 +9,4 @@
   isTranslated?: boolean;
   originalTitle?: string;
   originalContentSnippet?: string;
-  originalContent?: string;
-  content?: string;
 }
