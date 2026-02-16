@@ -3,7 +3,7 @@ import type { NewsSource } from '../types';
 
 /**
  * Реестр всех источников новостей
- * @deprecated Используется только как fallback в news-service.
+ * Используется в news-service как runtime fallback.
  */
 export function createNewsSources(): NewsSource[] {
   return [

@@ -17,7 +17,7 @@ export const feedSources = pgTable('feed_sources', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 100 }).notNull(),
   url: text('url').notNull().unique(),
-  type: varchar('type', { length: 20 }).default('rss').notNull(), // 'rss' | 'api' | 'arxiv'
+  type: varchar('type', { length: 20 }).default('rss').notNull(), // 'rss'
   language: varchar('language', { length: 10 }).default('ru').notNull(),
   isActive: boolean('is_active').default(true).notNull(),
   lastFetchedAt: timestamp('last_fetched_at', { withTimezone: true }),
@@ -40,14 +40,13 @@ export const articles = pgTable(
     pubDate: timestamp('pub_date', { withTimezone: true }).notNull(),
     content: text('content'),
     contentSnippet: varchar('content_snippet', { length: 500 }),
-    imageUrl: text('image_url'),
     language: varchar('language', { length: 10 }).default('en').notNull(),
     // Поля для перевода (Stage 4)
     translatedTitle: text('translated_title'),
     translatedSnippet: text('translated_snippet'),
     translatedContent: text('translated_content'),
     isTranslated: boolean('is_translated').default(false).notNull(),
-    // Поля для AI-суммаризации (Stage 7)
+    // Поля для AI-суммаризации (future stage, пока не используется)
     summary: text('summary'),
     isSummarized: boolean('is_summarized').default(false).notNull(),
     summaryModel: varchar('summary_model', { length: 50 }),

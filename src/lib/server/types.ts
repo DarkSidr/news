@@ -17,13 +17,13 @@ export interface RawNewsItem {
 }
 
 /**
- * Интерфейс источника новостей (RSS, API, и т.д.)
+ * Интерфейс источника новостей (только RSS)
  */
 export interface NewsSource {
   /** Название источника */
   name: string;
   /** Тип источника */
-  type: 'rss' | 'api' | 'reddit' | 'arxiv';
+  type: 'rss';
   /** Язык контента */
   language: string;
   /** Флаг активности */
