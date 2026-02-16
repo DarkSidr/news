@@ -66,7 +66,9 @@ export class ArxivSource implements NewsSource {
     }
 
     try {
-      const response = await fetchFn(this.url);
+      const response = await fetchFn(this.url, {
+        signal: AbortSignal.timeout(10000)
+      });
       if (!response.ok) {
         throw new Error(`ArXiv API error: ${response.status}`);
       }
@@ -91,9 +93,13 @@ export class ArxivSource implements NewsSource {
         // Debugging locally showed rss-parser on Atom returns link as an array if multiple,
         // or object if single. We mapped 'link' to 'links'.
         
+        // License check disabled: ArXiv API often returns items without explicit license metadata
+        // and we want to show ArXiv content regardless of explicit CC tag for now.
+        /*
         if (!this.isCreativeCommons(item)) {
             continue;
         }
+        */
 
         const authors = item.authors?.map(a => a.name).join(', ') || 'Unknown Authors';
         const primaryCat = item['arxiv:primary_category']?.['$']?.term || this.categories[0];

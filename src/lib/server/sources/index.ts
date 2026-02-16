@@ -5,7 +5,14 @@ import type { NewsSource } from '../types';
  * Реестр всех источников новостей
  */
 export function createNewsSources(): NewsSource[] {
-  return [...DEFAULT_RSS_FEEDS];
+  const arxivSource = new ArxivSource('ArXiv AI', ['cs.AI', 'cs.LG', 'cs.CL']);
+  const newsDataSource = new NewsDataSource('NewsData.io');
+  
+  return [
+    ...DEFAULT_RSS_FEEDS,
+    arxivSource,
+    newsDataSource
+  ];
 }
 
 /**
