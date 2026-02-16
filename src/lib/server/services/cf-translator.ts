@@ -1,4 +1,4 @@
-import { CF_ACCOUNT_ID, CF_AI_TOKEN } from '$lib/server/config';
+import { TRANSLATION_TIMEOUT_MS } from '$lib/server/config';
 import type { TranslationService } from './translation-service';
 
 interface CloudflareTranslateResponse {
@@ -16,7 +16,7 @@ export class CloudflareTranslator implements TranslationService {
   private accountId: string;
   private token: string;
 
-  constructor(fetchFn: typeof fetch, accountId = CF_ACCOUNT_ID, token = CF_AI_TOKEN) {
+  constructor(fetchFn: typeof fetch, accountId: string, token: string) {
     this.fetchFn = fetchFn;
     this.accountId = accountId;
     this.token = token;
@@ -49,7 +49,8 @@ export class CloudflareTranslator implements TranslationService {
         text,
         source_lang: from,
         target_lang: to
-      })
+      }),
+      signal: AbortSignal.timeout(TRANSLATION_TIMEOUT_MS)
     });
 
     if (!response.ok) {

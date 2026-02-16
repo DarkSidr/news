@@ -54,8 +54,9 @@ export function protectGlossaryTerms(
     const token = `__TECH_TERM_${i}__`;
     const pattern = new RegExp(escapeRegExp(term), 'g');
 
-    if (pattern.test(processedText)) {
-      processedText = processedText.replace(pattern, token);
+    const replaced = processedText.replace(pattern, token);
+    if (replaced !== processedText) {
+      processedText = replaced;
       replacements.push({ token, term });
     }
   }
@@ -74,12 +75,4 @@ export function restoreGlossaryTerms(
   return replacements.reduce((resultText, replacement) => {
     return resultText.replace(new RegExp(escapeRegExp(replacement.token), 'g'), replacement.term);
   }, text);
-}
-
-export function buildGlossaryInstruction(terms: string[] = TECH_GLOSSARY): string {
-  if (terms.length === 0) {
-    return '';
-  }
-
-  return `Сохрани без перевода следующие технические термины: ${terms.join(', ')}.`;
 }

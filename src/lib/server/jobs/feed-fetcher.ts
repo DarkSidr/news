@@ -5,7 +5,12 @@ import type { NewsItem } from '$lib/types';
 import { DEFAULT_RSS_FEEDS } from '../sources/rss-source';
 import * as schema from '../db/schema';
 import { articles, feedSources, fetchLogs } from '../db/schema';
-import { BLOCKED_DOMAINS, MAX_SNIPPET_LENGTH, TRANSLATION_MAX_PER_RUN } from '../config';
+import {
+  BLOCKED_DOMAINS,
+  MAX_SNIPPET_LENGTH,
+  TRANSLATION_MAX_PER_RUN,
+  MAX_TRANSLATION_CONTENT_LENGTH
+} from '../config';
 import {
   stripHtml,
   buildNewsId,
@@ -15,7 +20,9 @@ import {
   stripReadMoreLinks,
   type FeedItemLike
 } from '../news-utils';
+import { createNewsSource } from '../sources/factory';
 import { RssSource } from '../sources/rss-source';
+import { NEWSDATA_API_KEY } from '../config';
 import type { RawNewsItem } from '../types';
 import type { FeedSource as DbFeedSource } from '../db/schema';
 import type { TranslationService } from '../services/translation-service';
@@ -59,13 +66,34 @@ export class FeedFetcher {
       return;
     }
 
-    const defaultSources = DEFAULT_RSS_FEEDS.map((feed) => ({
+    const defaultSources: any[] = DEFAULT_RSS_FEEDS.map((feed) => ({
       name: feed.name,
       url: feed.url,
       type: feed.type,
       language: feed.language,
       isActive: feed.isActive
     }));
+
+    // Add NewsData.io source if API key is present
+    if (NEWSDATA_API_KEY) {
+      defaultSources.push({
+        name: 'NewsData.io',
+        url: 'https://newsdata.io/api/1/news',
+        type: 'api',
+        language: 'ru', // Default to 'ru' or 'all' depending on preference
+        isActive: true
+      });
+    }
+
+    // Add ArXiv AI Research Source
+    // We add it regardless of API key as it's optional, but maybe check if enabled in future
+    defaultSources.push({
+        name: 'ArXiv AI Research',
+        url: 'http://export.arxiv.org/api/query?search_query=cat:cs.AI+OR+cat:cs.LG&sortBy=submittedDate&sortOrder=descending',
+        type: 'arxiv',
+        language: 'en',
+        isActive: true
+    });
 
     await this.db.insert(feedSources).values(defaultSources);
     console.log(`[FeedFetcher] Initialized ${defaultSources.length} default sources`);
@@ -222,17 +250,15 @@ export class FeedFetcher {
    * Фетчинг и подготовка новостей для конкретного источника
    */
   private async fetchSourceNews(source: DbFeedSource): Promise<NewsItem[]> {
-    if (source.type !== 'rss') {
-      console.warn(`[FeedFetcher] Unsupported source type "${source.type}" for ${source.name}`);
-      return [];
+    // Use factory to create source instance
+    const newsSource = createNewsSource(source);
+
+    if (!newsSource) {
+       console.warn(`[FeedFetcher] could not create source instance for ${source.name} (${source.type})`);
+       return [];
     }
 
-    const rssSource = new RssSource(source.name, source.url, {
-      language: source.language,
-      isActive: source.isActive
-    });
-
-    const rawItems = await rssSource.fetch(this.fetchFn);
+    const rawItems = await newsSource.fetch(this.fetchFn);
     const transformed = rawItems.map((rawItem, index) =>
       this.transformRawNewsItem(rawItem, source.name, source.language, index)
     );
@@ -367,7 +393,10 @@ export class FeedFetcher {
     for (const [language, items] of groupedByLanguage.entries()) {
       const titles = items.map((item) => item.title);
       const snippets = items.map((item) => item.contentSnippet ?? '');
-      const contents = items.map((item) => stripHtml(item.content ?? ''));
+      // P0: Ограничиваем размер контента перед переводом
+      const contents = items.map((item) =>
+        stripHtml(item.content ?? '').slice(0, MAX_TRANSLATION_CONTENT_LENGTH)
+      );
 
       try {
         const translatedTitles = await this.translationService.translateBatch(
@@ -386,34 +415,43 @@ export class FeedFetcher {
           'ru'
         );
 
-        for (let i = 0; i < items.length; i++) {
-          const item = items[i];
-          const translatedTitle = translatedTitles[i];
-          const translatedSnippet = translatedSnippets[i];
-          const translatedContent = translatedContents[i];
+        // P1: Используем транзакцию и Promise.all для ускорения обновлений
+        await this.db.transaction(async (tx) => {
+          const updates = [];
+          
+          for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const translatedTitle = translatedTitles[i];
+            const translatedSnippet = translatedSnippets[i];
+            const translatedContent = translatedContents[i];
 
-          if (
-            !translatedTitle ||
-            (item.contentSnippet && !translatedSnippet) ||
-            (item.content && !translatedContent)
-          ) {
-            continue;
+            if (
+              !translatedTitle ||
+              (item.contentSnippet && !translatedSnippet) ||
+              (item.content && !translatedContent)
+            ) {
+              continue;
+            }
+
+            updates.push(
+              tx
+                .update(articles)
+                .set({
+                  translatedTitle,
+                  translatedSnippet: item.contentSnippet ? translatedSnippet : null,
+                  translatedContent: item.content
+                    ? this.convertTranslatedTextToHtml(translatedContent)
+                    : null,
+                  isTranslated: true
+                })
+                .where(eq(articles.id, item.id))
+            );
+
+            translatedCount += 1;
           }
-
-          await this.db
-            .update(articles)
-            .set({
-              translatedTitle,
-              translatedSnippet: item.contentSnippet ? translatedSnippet : null,
-              translatedContent: item.content
-                ? this.convertTranslatedTextToHtml(translatedContent)
-                : null,
-              isTranslated: true
-            })
-            .where(eq(articles.id, item.id));
-
-          translatedCount += 1;
-        }
+          
+          await Promise.all(updates);
+        });
       } catch (error) {
         console.error(`[FeedFetcher] Translation failed for source ${sourceId}:`, error);
       }

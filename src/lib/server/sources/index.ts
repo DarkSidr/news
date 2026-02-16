@@ -15,5 +15,8 @@ export function getActiveSources(sources: NewsSource[]): NewsSource[] {
   return sources.filter((s) => s.isActive);
 }
 
-export { RssSource, DEFAULT_RSS_FEEDS };
+import { NewsDataSource } from './newsdata-source';
+import { ArxivSource } from './arxiv-source';
+
+export { RssSource, NewsDataSource, ArxivSource, DEFAULT_RSS_FEEDS };
 export type { NewsSource };

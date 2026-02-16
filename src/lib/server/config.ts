@@ -20,12 +20,23 @@ export const TRANSLATION_BATCH_SIZE = parsePositiveInt(
   5
 );
 
+export const MAX_TRANSLATION_CONTENT_LENGTH = parsePositiveInt(
+  env.MAX_TRANSLATION_CONTENT_LENGTH ?? '',
+  5000
+);
+
+export const TRANSLATION_TIMEOUT_MS = parsePositiveInt(
+  env.TRANSLATION_TIMEOUT_MS ?? '',
+  30_000
+);
+
 export const CF_ACCOUNT_ID = env.CF_ACCOUNT_ID?.trim() ?? '';
 export const CF_AI_TOKEN = env.CF_AI_TOKEN?.trim() ?? '';
-export const LIBRETRANSLATE_URL =
-  env.LIBRETRANSLATE_URL?.trim() || 'http://localhost:5000';
+export const LIBRETRANSLATE_URL = env.LIBRETRANSLATE_URL?.trim() ?? '';
 
 export const BLOCKED_DOMAINS: string[] = (env.BLOCKED_DOMAINS || 'css-doodle.com')
   .split(',')
   .map((domain: string) => domain.trim())
   .filter((domain: string) => domain.length > 0);
+
+export const NEWSDATA_API_KEY = env.NEWSDATA_API_KEY?.trim() ?? '';

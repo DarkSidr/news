@@ -5,11 +5,13 @@ vi.mock('$lib/server/config', () => ({
   TRANSLATION_BATCH_SIZE: 5,
   CF_ACCOUNT_ID: '',
   CF_AI_TOKEN: '',
-  LIBRETRANSLATE_URL: 'http://localhost:5000'
+  LIBRETRANSLATE_URL: 'http://localhost:5000',
+  TRANSLATION_TIMEOUT_MS: 30000
 }));
 
 const { LibreTranslator } = await import('./libre-translator');
 const { TranslationProviderChain } = await import('./translation-service');
+const { CloudflareTranslator } = await import('./cf-translator');
 
 class MockTranslator implements TranslationService {
   private shouldFail: boolean;
@@ -73,6 +75,64 @@ describe('LibreTranslator', () => {
     const translator = new LibreTranslator(fetchFn as unknown as typeof fetch, 'http://localhost:5000');
 
     await expect(translator.translate('Hello', 'en', 'ru')).rejects.toThrow('HTTP 503');
+  });
+});
+
+describe('CloudflareTranslator', () => {
+
+  it('translates single text via API', async () => {
+    const fetchFn = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        result: { translated_text: 'Привет мир' }
+      })
+    });
+
+    const translator = new CloudflareTranslator(fetchFn as unknown as typeof fetch, 'acc-id', 'token');
+    const result = await translator.translate('Hello world', 'en', 'ru');
+
+    expect(result).toBe('Привет мир');
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+    expect(fetchFn).toHaveBeenCalledWith(
+      expect.stringContaining('acc-id'),
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          authorization: 'Bearer token'
+        })
+      })
+    );
+  });
+
+  it('translates batch text via API', async () => {
+    // Cloudflare translate() is called in a loop for batch
+    const fetchFn = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, result: { translated_text: 'Один' } })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, result: { translated_text: 'Два' } })
+      });
+
+    const translator = new CloudflareTranslator(fetchFn as unknown as typeof fetch, 'acc-id', 'token');
+    const result = await translator.translateBatch(['One', 'Two'], 'en', 'ru');
+
+    expect(result).toEqual(['Один', 'Два']);
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
+  it('throws on API error response', async () => {
+    const fetchFn = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401
+    });
+
+    const translator = new CloudflareTranslator(fetchFn as unknown as typeof fetch, 'acc-id', 'token');
+
+    await expect(translator.translate('Hello', 'en', 'ru')).rejects.toThrow('HTTP 401');
   });
 });
 

@@ -103,5 +103,17 @@ export const DEFAULT_RSS_FEEDS: RssSource[] = [
     'TechCrunch AI',
     'https://techcrunch.com/category/artificial-intelligence/feed/',
     { language: 'en' }
-  )
+  ),
+  new RssSource('Google Web.dev', 'https://web.dev/feed.xml', {
+    language: 'en'
+  }),
+  new RssSource('MDN Blog', 'https://developer.mozilla.org/en-US/blog/rss.xml', {
+    language: 'en'
+  }),
+  new RssSource('Microsoft TypeScript', 'https://devblogs.microsoft.com/typescript/feed/', {
+    language: 'en'
+  }),
+  new RssSource('CNCF Blog', 'https://www.cncf.io/feed/', {
+    language: 'en'
+  })
 ];

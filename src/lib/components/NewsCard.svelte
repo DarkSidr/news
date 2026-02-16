@@ -9,7 +9,7 @@
   let timeAgo = $derived(
     formatDistanceToNow(new Date(news.pubDate), { addSuffix: true, locale: ru })
   );
-  let languageFlag = $derived(news.isTranslated ? '🇷🇺' : news.language === 'ru' ? '🇷🇺' : '🇬🇧');
+  let languageFlag = $derived(news.isTranslated ? '🇬🇧→🇷🇺' : news.language === 'ru' ? '🇷🇺' : '🇬🇧');
   let languageLabel = $derived(news.isTranslated ? 'Доступен перевод' : 'Оригинал');
 </script>
 

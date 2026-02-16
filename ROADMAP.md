@@ -302,6 +302,7 @@ src/
   - Если `language != 'ru'` и `is_translated == false`:
     - Перевести `title` → `translated_title`
     - Перевести `content_snippet` → `translated_snippet`
+    - Перевести `content` → `translated_content` (с лимитом длины)
     - Обновить запись: `is_translated = true`
 - [x] Добавить rate-limiting: не более N переводов за цикл (чтобы не превысить лимит API)
 

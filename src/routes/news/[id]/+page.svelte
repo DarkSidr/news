@@ -98,6 +98,7 @@
                <button
                  class="mb-6 inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
                  onclick={() => showOriginal = !showOriginal}
+                 aria-pressed={showOriginal}
                >
                  {showOriginal ? 'Показать перевод' : 'Показать оригинал'}
                </button>

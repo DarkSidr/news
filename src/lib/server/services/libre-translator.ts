@@ -1,4 +1,4 @@
-import { LIBRETRANSLATE_URL } from '$lib/server/config';
+import { TRANSLATION_TIMEOUT_MS } from '$lib/server/config';
 import type { TranslationService } from './translation-service';
 
 interface LibreTranslateSingleResponse {
@@ -13,7 +13,7 @@ export class LibreTranslator implements TranslationService {
   private fetchFn: typeof fetch;
   private baseUrl: string;
 
-  constructor(fetchFn: typeof fetch, baseUrl = LIBRETRANSLATE_URL) {
+  constructor(fetchFn: typeof fetch, baseUrl: string) {
     this.fetchFn = fetchFn;
     this.baseUrl = baseUrl.replace(/\/$/, '');
   }
@@ -41,7 +41,8 @@ export class LibreTranslator implements TranslationService {
         source: from,
         target: to,
         format: 'text'
-      })
+      }),
+      signal: AbortSignal.timeout(TRANSLATION_TIMEOUT_MS)
     });
 
     if (!response.ok) {
@@ -76,7 +77,8 @@ export class LibreTranslator implements TranslationService {
         source: from,
         target: to,
         format: 'text'
-      })
+      }),
+      signal: AbortSignal.timeout(TRANSLATION_TIMEOUT_MS)
     });
 
     if (!response.ok) {

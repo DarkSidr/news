@@ -17,7 +17,7 @@ export const feedSources = pgTable('feed_sources', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 100 }).notNull(),
   url: text('url').notNull().unique(),
-  type: varchar('type', { length: 20 }).default('rss').notNull(), // 'rss' | 'api' | 'reddit'
+  type: varchar('type', { length: 20 }).default('rss').notNull(), // 'rss' | 'api' | 'arxiv'
   language: varchar('language', { length: 10 }).default('ru').notNull(),
   isActive: boolean('is_active').default(true).notNull(),
   lastFetchedAt: timestamp('last_fetched_at', { withTimezone: true }),
