@@ -192,3 +192,45 @@
 - **Источник:** Runtime check (15.02.2026)
 - **Статус:** Готово
 - **Приписка Codex (15.02.2026):** Исправил. В `src/lib/server/db/news-repository.ts` добавлена нормализация `toNullableDate(...)` для `latest_article_at`, после чего `GET /api/health` снова возвращает корректный `status: ok`.
+
+---
+
+## Stage 6
+
+### 25. `ArxivSource` — XSS через конструирование HTML
+- **Файл:** `src/lib/server/sources/arxiv-source.ts:111-115`
+- **Суть:** `authors` и `item.contentSnippet` вставляются в HTML-шаблон без экранирования. Если ArXiv вернёт вредоносный контент в `authors` — получится XSS. Формально `FeedFetcher.transformRawNewsItem()` прогоняет через `sanitize-html`, но content создаётся из raw-данных до санитизации.
+- **Источник:** Stage 6 Review (16.02.2026)
+- **Статус:** Готово
+- **Приписка Codex (16.02.2026):** Исправил. Добавлено экранирование HTML (`escapeHtml`) для `authors` и abstract перед вставкой в шаблон.
+
+### 26. `factory.ts` — `extractCategoriesFromUrl()` тесно привязана к формату URL
+- **Файл:** `src/lib/server/sources/factory.ts:47-61`
+- **Суть:** Парсинг категорий из URL с `+OR+` — хрупкий подход. Если формат URL ArXiv изменится или URL будет сохранён в другом формате — парсинг сломается. Fallback на `['cs.AI']` может быть неожиданным.
+- **Исправление:** Хранить категории отдельно (например, JSON в отдельном поле) или в `name` источника.
+- **Источник:** Stage 6 Review (16.02.2026)
+- **Статус:** Готово
+- **Приписка Codex (16.02.2026):** Исправил частично в рамках текущей схемы БД. Парсинг стал устойчивее: нормализация query, `decodeURIComponent`, разбор `OR` регулярным выражением, аккуратный fallback.
+
+### 27. `index.ts` — `createNewsSources()` не используется в production path
+- **Файл:** `src/lib/server/sources/index.ts:7-16`
+- **Суть:** `createNewsSources()` создаёт экземпляры напрямую, но FeedFetcher теперь использует factory через БД. Функция осталась, но не имеет потребителей в production code (только для fallback в `news-service.ts`).
+- **Исправление:** Пометить как deprecated или убрать.
+- **Источник:** Stage 6 Review (16.02.2026)
+- **Статус:** Готово
+- **Приписка Codex (16.02.2026):** Исправил. `createNewsSources()` помечена как `@deprecated` с пояснением, что используется только как fallback.
+
+### 28. ArXiv — hardcoded `max_results=30`
+- **Файл:** `src/lib/server/sources/arxiv-source.ts:60`
+- **Суть:** Количество результатов захардкожено. Стоит сделать параметром конструктора.
+- **Источник:** Stage 6 Review (16.02.2026)
+- **Статус:** Готово
+- **Приписка Codex (16.02.2026):** Исправил. Добавлен параметр конструктора `maxResults` (default `30`), URL строится динамически.
+
+### 29. `NewsDataSource` — hardcoded query string
+- **Файл:** `src/lib/server/sources/newsdata-source.ts:76`
+- **Суть:** Поисковый запрос `'programming OR "artificial intelligence" OR linux OR coding'` захардкожен. Негибко — нельзя настроить без изменения кода.
+- **Исправление:** Сделать параметром конструктора или config.
+- **Источник:** Stage 6 Review (16.02.2026)
+- **Статус:** Готово
+- **Приписка Codex (16.02.2026):** Исправил. Поисковый запрос вынесен в параметр конструктора `query` (с дефолтом), больше не захардкожен в методе `fetch`.
