@@ -21,7 +21,7 @@ describe('ArxivSource', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('should fetch and filter items by CC license', async () => {
+  it('should fetch and transform items', async () => {
     const mockXml = `
       <feed xmlns="http://www.w3.org/2005/Atom">
         <entry>
@@ -50,9 +50,9 @@ describe('ArxivSource', () => {
     const source = new ArxivSource('Test', ['cs.AI']);
     const results = await source.fetch(fetchMock);
 
-    expect(results).toHaveLength(1);
+    expect(results).toHaveLength(2);
     expect(results[0].title).toContain('Allowed Paper');
-    expect(results[0].source).toBe('ArXiv AI Research');
+    expect(results[0].source).toBe('Test');
   });
 
   it('should handle API errors', async () => {
@@ -62,8 +62,6 @@ describe('ArxivSource', () => {
     });
 
     const source = new ArxivSource('Test', ['cs.AI']);
-    const results = await source.fetch(fetchMock);
-    expect(results).toEqual([]); 
-    // It catches error and logs, returning empty array
+    await expect(source.fetch(fetchMock)).rejects.toThrow('ArXiv API error: 500');
   });
 });

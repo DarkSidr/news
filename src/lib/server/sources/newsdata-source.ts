@@ -1,5 +1,5 @@
 import type { NewsSource, RawNewsItem } from '../types';
-import { NEWSDATA_API_KEY } from '../config';
+import { NEWSDATA_API_KEY, RSS_TIMEOUT_MS } from '../config';
 
 interface NewsDataResponse {
   status: string;
@@ -33,16 +33,26 @@ export class NewsDataSource implements NewsSource {
   type: 'api' = 'api';
   url: string; // Required by NewsSource interface
   private apiKey: string;
+  private timeoutMs: number;
+  private query: string;
   private baseUrl = 'https://newsdata.io/api/1/news';
 
   constructor(
     name: string,
-    options: { language?: string; isActive?: boolean; apiKey?: string } = {}
+    options: {
+      language?: string;
+      isActive?: boolean;
+      apiKey?: string;
+      timeoutMs?: number;
+      query?: string;
+    } = {}
   ) {
     this.name = name;
     this.language = options.language || 'en';
     this.isActive = options.isActive ?? true;
     this.apiKey = options.apiKey || NEWSDATA_API_KEY;
+    this.timeoutMs = options.timeoutMs ?? RSS_TIMEOUT_MS;
+    this.query = options.query ?? 'programming OR "artificial intelligence" OR linux OR coding';
     this.url = this.baseUrl;
   }
 
@@ -73,9 +83,11 @@ export class NewsDataSource implements NewsSource {
 
       // Priority domains/queries could be configured here
       // For general tech news:
-      url.searchParams.append('q', 'programming OR "artificial intelligence" OR linux OR coding');
+      url.searchParams.append('q', this.query);
 
-      const response = await fetchFn(url.toString());
+      const response = await fetchFn(url.toString(), {
+        signal: AbortSignal.timeout(this.timeoutMs)
+      });
 
       if (!response.ok) {
         if (response.status === 429) {
@@ -94,7 +106,10 @@ export class NewsDataSource implements NewsSource {
       return data.results.map(this.transformToRawItem);
     } catch (error) {
       console.error(`[NewsDataSource] Error fetching ${this.name}:`, error);
-      throw error;
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(String(error));
     }
   }
 

@@ -41,13 +41,13 @@ describe('NewsSourceFactory', () => {
 
   it('should return null for unknown type', () => {
     const source: FeedSource = {
-        id: 3,
-        name: 'Unknown',
-        url: 'http://example.com',
-        type: 'unknown' as any,
-        language: 'en',
-        isActive: true,
-        lastFetchedAt: null,
+      id: 3,
+      name: 'Unknown',
+      url: 'http://example.com',
+      type: 'unknown' as FeedSource['type'],
+      language: 'en',
+      isActive: true,
+      lastFetchedAt: null,
         createdAt: new Date()
       };
   

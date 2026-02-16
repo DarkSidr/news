@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/private';
+const env = process.env;
 
 function parsePositiveInt(value: string, fallback: number): number {
   const parsed = Number.parseInt(value, 10);

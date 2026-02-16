@@ -23,7 +23,7 @@ export interface NewsSource {
   /** Название источника */
   name: string;
   /** Тип источника */
-  type: 'rss' | 'api' | 'reddit';
+  type: 'rss' | 'api' | 'reddit' | 'arxiv';
   /** Язык контента */
   language: string;
   /** Флаг активности */

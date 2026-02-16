@@ -25,6 +25,7 @@ import { RssSource } from '../sources/rss-source';
 import { NEWSDATA_API_KEY } from '../config';
 import type { RawNewsItem } from '../types';
 import type { FeedSource as DbFeedSource } from '../db/schema';
+import type { NewFeedSource } from '../db/schema';
 import type { TranslationService } from '../services/translation-service';
 import { createTranslationService, isTranslationConfigured } from '../services/translation-service';
 
@@ -66,7 +67,7 @@ export class FeedFetcher {
       return;
     }
 
-    const defaultSources: any[] = DEFAULT_RSS_FEEDS.map((feed) => ({
+    const defaultSources: NewFeedSource[] = DEFAULT_RSS_FEEDS.map((feed) => ({
       name: feed.name,
       url: feed.url,
       type: feed.type,

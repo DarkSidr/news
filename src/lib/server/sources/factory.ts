@@ -45,17 +45,27 @@ export function createNewsSource(source: FeedSource): NewsSource | null {
 }
 
 function extractCategoriesFromUrl(url: string): string[] {
-    try {
-        const u = new URL(url);
-        const query = u.searchParams.get('search_query');
-        if (query) {
-            // cat:cs.AI+OR+cat:cs.LG
-            return query.split('+OR+')
-                .map(s => s.replace('cat:', ''))
-                .filter(Boolean);
-        }
-    } catch {
-       // ignore
+  try {
+    const parsedUrl = new URL(url);
+    const rawQuery = parsedUrl.searchParams.get('search_query');
+
+    if (!rawQuery) {
+      return ['cs.AI'];
     }
-    return ['cs.AI']; // Fallback
+
+    const normalizedQuery = decodeURIComponent(rawQuery).replaceAll('+', ' ');
+    const categories = normalizedQuery
+      .split(/\s+OR\s+/i)
+      .map((chunk) => chunk.trim())
+      .map((chunk) => chunk.replace(/^cat:/i, '').trim())
+      .filter((chunk) => chunk.length > 0);
+
+    if (categories.length > 0) {
+      return categories;
+    }
+  } catch {
+    // Ignore malformed URL and fall back to default category.
+  }
+
+  return ['cs.AI'];
 }
