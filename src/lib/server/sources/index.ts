@@ -1,6 +1,4 @@
 import { RssSource, DEFAULT_RSS_FEEDS } from './rss-source';
-import { NewsDataSource } from './newsdata-source';
-import { ArxivSource } from './arxiv-source';
 import type { NewsSource } from '../types';
 
 /**
@@ -8,13 +6,8 @@ import type { NewsSource } from '../types';
  * @deprecated Используется только как fallback в news-service.
  */
 export function createNewsSources(): NewsSource[] {
-  const arxivSource = new ArxivSource('ArXiv AI', ['cs.AI', 'cs.LG', 'cs.CL']);
-  const newsDataSource = new NewsDataSource('NewsData.io');
-
   return [
-    ...DEFAULT_RSS_FEEDS,
-    arxivSource,
-    newsDataSource
+    ...DEFAULT_RSS_FEEDS
   ];
 }
 
@@ -25,5 +18,5 @@ export function getActiveSources(sources: NewsSource[]): NewsSource[] {
   return sources.filter((s) => s.isActive);
 }
 
-export { RssSource, NewsDataSource, ArxivSource, DEFAULT_RSS_FEEDS };
+export { RssSource, DEFAULT_RSS_FEEDS };
 export type { NewsSource };

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { buildNewsId, extractImage, isLowQuality, normalizePubDate, stripHtml, stripReadMoreLinks } from './news-utils';
+import { buildNewsId, isLowQuality, normalizePubDate, stripHtml, stripReadMoreLinks } from './news-utils';
 import type { NewsItem } from '$lib/types';
 
 describe('stripHtml', () => {
@@ -55,42 +55,7 @@ describe('normalizePubDate', () => {
   });
 });
 
-describe('extractImage', () => {
-  it('prefers enclosure over other sources', () => {
-    expect(
-      extractImage({
-        enclosure: { url: 'https://cdn.example.com/enclosure.jpg' },
-        'content:encoded': '<img src="https://cdn.example.com/content.jpg">'
-      })
-    ).toBe('https://cdn.example.com/enclosure.jpg');
-  });
 
-  it('supports media:content object and array', () => {
-    expect(
-      extractImage({
-        'media:content': { $: { url: 'https://cdn.example.com/media-object.jpg' } }
-      })
-    ).toBe('https://cdn.example.com/media-object.jpg');
-
-    expect(
-      extractImage({
-        'media:content': [{ $: { url: 'https://cdn.example.com/media-array.jpg' } }]
-      })
-    ).toBe('https://cdn.example.com/media-array.jpg');
-  });
-
-  it('extracts image from content with single quotes', () => {
-    expect(
-      extractImage({
-        content: "<p>Intro</p><img src='https://cdn.example.com/single-quote.jpg' alt='cover'>"
-      })
-    ).toBe('https://cdn.example.com/single-quote.jpg');
-  });
-
-  it('returns undefined when no image sources are present', () => {
-    expect(extractImage({ title: 'No image here' })).toBeUndefined();
-  });
-});
 
 describe('stripReadMoreLinks', () => {
   it('removes "Читать далее" links', () => {
@@ -122,8 +87,7 @@ describe('isLowQuality', () => {
     pubDate: new Date().toISOString(),
     content: 'Some valuable content here that is definitely longer than fifty characters to ensure it is considered good quality.',
     contentSnippet: 'Snippet',
-    source: 'Test',
-    imageUrl: undefined
+    source: 'Test'
   };
 
   it('identifies empty content as low quality', () => {
@@ -138,23 +102,22 @@ describe('isLowQuality', () => {
     expect(isLowQuality({ ...baseItem, content: '<a href="https://news.ycombinator.com/item?id=123">Comments</a>' })).toBe(true);
   });
 
-  it('identifies very short content without image as low quality', () => {
+  it('identifies very short content as low quality', () => {
     expect(isLowQuality({ ...baseItem, content: 'Too short' })).toBe(true);
   });
 
-  it('accepts short content if it has an image', () => {
+  it('identifies short content as low quality even if it previously had image', () => {
     expect(isLowQuality({ 
       ...baseItem, 
-      content: 'Short but has image', 
-      imageUrl: 'https://example.com/image.jpg' 
-    })).toBe(false);
+      content: 'Short content that would have been saved by image' 
+    })).toBe(true);
   });
 
   it('accepts normal length content', () => {
     expect(isLowQuality(baseItem)).toBe(false);
   });
 
-  it('identifies content identical to title as low quality (if no image)', () => {
+  it('identifies content identical to title as low quality', () => {
      expect(isLowQuality({ 
       ...baseItem, 
       title: 'Breaking News', 

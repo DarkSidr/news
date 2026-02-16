@@ -11,7 +11,6 @@ interface DbNewsRow {
   pubDate: Date;
   contentSnippet: string | null;
   translatedSnippet: string | null;
-  imageUrl: string | null;
   content: string | null;
   translatedContent: string | null;
   source: string;
@@ -66,7 +65,6 @@ function toNewsItem(row: DbNewsRow): NewsItem {
     originalTitle: hasTitleTranslation ? row.title : undefined,
     originalContentSnippet: hasSnippetTranslation ? row.contentSnippet ?? '' : undefined,
     originalContent: hasContentTranslation ? row.content ?? '' : undefined,
-    imageUrl: row.imageUrl ?? undefined,
     content: hasContentTranslation ? row.translatedContent! : row.content ?? undefined
   };
 }
@@ -81,7 +79,6 @@ export async function getLatestNews(limit = 50): Promise<NewsItem[]> {
       pubDate: articles.pubDate,
       contentSnippet: articles.contentSnippet,
       translatedSnippet: articles.translatedSnippet,
-      imageUrl: articles.imageUrl,
       content: articles.content,
       translatedContent: articles.translatedContent,
       source: feedSources.name,
@@ -102,7 +99,6 @@ export async function getLatestNews(limit = 50): Promise<NewsItem[]> {
       pubDate: row.pubDate,
       contentSnippet: row.contentSnippet,
       translatedSnippet: row.translatedSnippet,
-      imageUrl: row.imageUrl,
       content: row.content,
       translatedContent: row.translatedContent,
       source: row.source,
@@ -122,7 +118,6 @@ export async function getNewsById(id: string): Promise<NewsItem | null> {
       pubDate: articles.pubDate,
       contentSnippet: articles.contentSnippet,
       translatedSnippet: articles.translatedSnippet,
-      imageUrl: articles.imageUrl,
       content: articles.content,
       translatedContent: articles.translatedContent,
       source: feedSources.name,
@@ -137,7 +132,7 @@ export async function getNewsById(id: string): Promise<NewsItem | null> {
   if (rows.length === 0) {
     return null;
   }
-
+  
   const row = rows[0];
 
   return toNewsItem({
@@ -148,7 +143,6 @@ export async function getNewsById(id: string): Promise<NewsItem | null> {
     pubDate: row.pubDate,
     contentSnippet: row.contentSnippet,
     translatedSnippet: row.translatedSnippet,
-    imageUrl: row.imageUrl,
     content: row.content,
     translatedContent: row.translatedContent,
     source: row.source,

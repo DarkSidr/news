@@ -1,5 +1,5 @@
 import type { RequestHandler } from '@sveltejs/kit';
-import { getSitemapNews } from '$lib/server/db/news-repository';
+
 
 interface SitemapUrl {
   loc: string;
@@ -12,18 +12,8 @@ export const GET: RequestHandler = async ({ url }) => {
   const baseUrl = `${url.protocol}//${url.host}`;
 
   try {
-    const news = await getSitemapNews(100);
-
     const urls: SitemapUrl[] = [
-      { loc: baseUrl, priority: '1.0', changefreq: 'daily' },
-      ...news.slice(0, 100).map((item) => ({
-        loc: `${baseUrl}/news/${encodeURIComponent(item.id)}`,
-        priority: '0.8',
-        changefreq: 'daily',
-        lastmod: item.pubDate.toISOString().startsWith('1970-01-01')
-          ? undefined
-          : item.pubDate.toISOString().split('T')[0]
-      }))
+      { loc: baseUrl, priority: '1.0', changefreq: 'hourly' }
     ];
 
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>

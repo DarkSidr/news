@@ -29,50 +29,6 @@ export function stripHtml(value: string): string {
     .trim();
 }
 
-/**
- * Extracts the main image URL from an RSS item.
- * Prioritizes:
- * 1. enclosure.url
- * 2. media:content
- * 3. First <img src> in content/description
- */
-export function extractImage(item: FeedItemLike): string | undefined {
-  // 1. Check enclosure
-  if (item.enclosure?.url) {
-    return item.enclosure.url;
-  }
-
-  // 2. Check media:content
-  if (item['media:content']) {
-    const media = item['media:content'];
-    if (Array.isArray(media)) {
-        if (media.length > 0 && media[0].$?.url) return media[0].$.url;
-    } else if (media.$?.url) {
-        return media.$.url;
-    }
-  }
-
-  // 3. Regex for <img src="..."> or <img src='...'> in content
-  const imgRegex = /<img[^>]+src=["']([^"'>]+)["']/i;
-  
-  const contentCandidates = [
-    item['content:encoded'],
-    item.content,
-    item.description
-  ];
-
-  for (const candidate of contentCandidates) {
-    if (candidate) {
-      const match = candidate.match(imgRegex);
-      if (match && match[1]) {
-        return match[1];
-      }
-    }
-  }
-
-  return undefined;
-}
-
 export function buildNewsId(feedName: string, item: FeedItemLike, index: number): string {
   const link = item.link?.trim();
   const guid = item.guid?.trim();
@@ -110,15 +66,13 @@ export function isLowQuality(item: NewsItem): boolean {
   // 2. Just "Comments" (common in HN RSS)
   if (cleanContent.toLowerCase() === 'comments') return true;
 
-  // 3. Very short content (< 50 chars) without image
-  // Unless it's a video/gallery (but we only track imageUrl for now)
-  const hasImage = !!item.imageUrl;
-  if (cleanContent.length < 50 && !hasImage) {
+  // 3. Very short content (< 50 chars)
+  if (cleanContent.length < 50) {
     return true;
   }
 
-  // 4. Content is identical to the title (stub article) and no image
-  if (cleanContent === item.title.trim() && !hasImage) {
+  // 4. Content is identical to the title (stub article)
+  if (cleanContent === item.title.trim()) {
     return true;
   }
 

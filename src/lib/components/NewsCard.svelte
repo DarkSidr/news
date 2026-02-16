@@ -13,55 +13,33 @@
   let languageLabel = $derived(news.isTranslated ? 'Доступен перевод' : 'Оригинал');
 </script>
 
-<article class="break-inside-avoid mb-6 transition-all hover:-translate-y-1 hover:shadow-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden flex flex-col h-auto backdrop-blur-sm dark:bg-opacity-80 group">
-  <a href="/news/{encodeURIComponent(news.id)}" class="block overflow-hidden relative aspect-video">
-    {#if news.imageUrl}
-      <img
-        src={news.imageUrl}
-        alt={news.title}
-        class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-        loading="lazy"
-      />
-    {:else}
-      <div class="w-full h-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 dark:from-blue-900/40 dark:to-purple-900/40 flex items-center justify-center">
-        <span class="text-4xl opacity-20 select-none">📰</span>
-      </div>
-    {/if}
-    <div class="absolute top-3 left-3">
-      <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-white/90 dark:bg-black/80 text-gray-800 dark:text-gray-200 backdrop-blur-md shadow-sm">
+<article class="break-inside-avoid mb-4 transition-all hover:-translate-y-1 hover:shadow-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden flex flex-col h-auto group cursor-pointer relative">
+  <a href={news.link} target="_blank" rel="noopener noreferrer" class="block p-5 h-full">
+    <div class="flex justify-between items-start mb-3">
+      <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
         {news.source}
       </span>
-    </div>
-  </a>
-
-  <div class="p-5 flex flex-col gap-3">
-    <div class="flex justify-between items-start text-xs text-gray-500 dark:text-gray-400">
-      <span>{timeAgo}</span>
-      <span class="inline-flex items-center gap-1" title={languageLabel}>
-        <span aria-hidden="true">{languageFlag}</span>
-      </span>
+      <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+        <span>{timeAgo}</span>
+        {#if news.isTranslated}
+           <span title={languageLabel}>{languageFlag}</span>
+        {/if}
+      </div>
     </div>
 
-    <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 leading-tight">
-      <a href="/news/{encodeURIComponent(news.id)}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-        {news.title}
-      </a>
+    <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 leading-snug mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+      {news.title}
     </h3>
 
-    <div class="prose prose-sm dark:prose-invert max-w-none">
-      <p class="text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed">
+    <div class="prose prose-sm dark:prose-invert max-w-none mb-4">
+      <p class="text-gray-600 dark:text-gray-400 line-clamp-4 text-sm leading-relaxed">
         {news.contentSnippet}
       </p>
     </div>
-    
-    <div class="mt-2 pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
-        <a href="/news/{encodeURIComponent(news.id)}" class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">
-            Читать далее
-        </a>
-        
-        <a href={news.link} target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" title="Открыть оригинал">
-            <ExternalLink size={16} />
-        </a>
+
+    <div class="flex items-center text-blue-600 dark:text-blue-400 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-5 right-5">
+      <span>Читать оригинал</span>
+      <ExternalLink size={14} class="ml-1" />
     </div>
-  </div>
+  </a>
 </article>

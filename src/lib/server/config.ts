@@ -39,4 +39,4 @@ export const BLOCKED_DOMAINS: string[] = (env.BLOCKED_DOMAINS || 'css-doodle.com
   .map((domain: string) => domain.trim())
   .filter((domain: string) => domain.length > 0);
 
-export const NEWSDATA_API_KEY = env.NEWSDATA_API_KEY?.trim() ?? '';
+

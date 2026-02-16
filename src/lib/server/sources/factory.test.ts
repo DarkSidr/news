@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createNewsSource } from './factory';
 import { RssSource } from './rss-source';
-import { NewsDataSource } from './newsdata-source';
+
 import type { FeedSource } from '../db/schema';
 
 describe('NewsSourceFactory', () => {
@@ -22,7 +22,7 @@ describe('NewsSourceFactory', () => {
     expect(instance?.name).toBe('RSS Feed');
   });
 
-  it('should create NewsDataSource for type "api" and newsdata.io URL', () => {
+  it('should return null for API type (removed feature)', () => {
     const source: FeedSource = {
         id: 2,
         name: 'NewsData',
@@ -35,8 +35,7 @@ describe('NewsSourceFactory', () => {
       };
   
       const instance = createNewsSource(source);
-      expect(instance).toBeInstanceOf(NewsDataSource);
-      expect(instance?.name).toBe('NewsData');
+      expect(instance).toBeNull();
   });
 
   it('should return null for unknown type', () => {

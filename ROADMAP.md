@@ -20,8 +20,8 @@
 
 - **Stage 1** — Выполнен (RSS агрегация, UI, Masonry, Dark Mode)
 - **Stage 1.5** — Выполнен (Theme switcher, content:encoded, фильтрация, 23+ тестов)
-- **Оценка:** 6.4–8.2/10 (в зависимости от ревью)
-- **MINOR_ISSUES.md:** Все пункты Stage 1 и 1.5 — Готово
+- **Stage 7 (Overhaul)** — **COMPLETED** (Simplification: No Images, No Detail Page, Direct Links)
+- **Оценка:** Pivot completed (2026-02-16).
 
 ### Текущая файловая структура (ключевые файлы)
 ```
@@ -435,6 +435,34 @@ src/
 - [ ] Отображать как отдельную категорию "Trending repos"
 
 ---
+
+## Stage 7: Overhaul - Simplify and Focus (Current Priority)
+
+> **Цель:** Упрощение проекта, отказ от платных источников, картинок и детальной страницы. Прямые ссылки на первоисточник.
+> **Дата:** 16.02.2026
+
+### 7.1 Удаление лишнего функционала
+- [x] Удалить `newsdata-source.ts` и `arxiv-source.ts`
+- [x] Удалить обработку изображений из utils
+- [x] Удалить страницу `src/routes/news/[id]/`
+- [x] Убрать Image теги из `NewsCard.svelte`
+
+### 7.2 Прямые ссылки
+- [x] `NewsCard`: клик по карточке ведёт на `link` (target=_blank)
+- [x] Убрать кнопки "Читать далее"
+
+### 7.3 Расширение RSS источников (вместо API)
+- [x] Добавить качественные RSS:
+    - TechCrunch, TheVerge, Wired (Tech section)
+    - HackerNews (Top/Best)
+    - Phoronix (Linux)
+    - OpenNET (Ru)
+    - Habr (Ru)
+    - Dev.to (Programming)
+
+---
+
+## <DEPRECATED> Stage 6: Дополнительные источники данных
 
 ## Stage 7: AI-суммаризация (Gemini 1.5 Flash)
 

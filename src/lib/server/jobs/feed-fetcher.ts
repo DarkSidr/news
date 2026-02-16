@@ -15,14 +15,12 @@ import {
   stripHtml,
   buildNewsId,
   normalizePubDate,
-  extractImage,
   isLowQuality,
   stripReadMoreLinks,
   type FeedItemLike
 } from '../news-utils';
 import { createNewsSource } from '../sources/factory';
 import { RssSource } from '../sources/rss-source';
-import { NEWSDATA_API_KEY } from '../config';
 import type { RawNewsItem } from '../types';
 import type { FeedSource as DbFeedSource } from '../db/schema';
 import type { NewFeedSource } from '../db/schema';
@@ -75,27 +73,6 @@ export class FeedFetcher {
       isActive: feed.isActive
     }));
 
-    // Add NewsData.io source if API key is present
-    if (NEWSDATA_API_KEY) {
-      defaultSources.push({
-        name: 'NewsData.io',
-        url: 'https://newsdata.io/api/1/news',
-        type: 'api',
-        language: 'ru', // Default to 'ru' or 'all' depending on preference
-        isActive: true
-      });
-    }
-
-    // Add ArXiv AI Research Source
-    // We add it regardless of API key as it's optional, but maybe check if enabled in future
-    defaultSources.push({
-        name: 'ArXiv AI Research',
-        url: 'http://export.arxiv.org/api/query?search_query=cat:cs.AI+OR+cat:cs.LG&sortBy=submittedDate&sortOrder=descending',
-        type: 'arxiv',
-        language: 'en',
-        isActive: true
-    });
-
     await this.db.insert(feedSources).values(defaultSources);
     console.log(`[FeedFetcher] Initialized ${defaultSources.length} default sources`);
   }
@@ -116,7 +93,6 @@ export class FeedFetcher {
       pubDate: new Date(item.pubDate),
       content: item.content || null,
       contentSnippet: item.contentSnippet || null,
-      imageUrl: item.imageUrl || null,
       language
     }));
 
@@ -280,15 +256,9 @@ export class FeedFetcher {
     return filtered.map((item) => {
       let content = item.content;
 
-      if (item.imageUrl && content) {
-        const cleanUrl = item.imageUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const imgRegex = new RegExp(`<img[^>]+src=["']${cleanUrl}["'][^>]*>`, 'i');
-
-        content = content.replace(imgRegex, '');
-        content = content.replace(/<figure[^>]*>\s*<\/figure>/gi, '');
-      }
-
       if (content) {
+        // Clean up empty figures if any remain
+        content = content.replace(/<figure[^>]*>\s*<\/figure>/gi, '');
         content = stripReadMoreLinks(content);
       }
 
@@ -328,12 +298,10 @@ export class FeedFetcher {
       source: sourceName,
       language: sourceLanguage,
       isTranslated: false,
-      imageUrl: extractImage(feedItemLike),
       content: sanitizeHtml(fullContent, {
-        allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'figure', 'figcaption']),
+        allowedTags: sanitizeHtml.defaults.allowedTags.filter(tag => tag !== 'img' && tag !== 'figure' && tag !== 'figcaption'),
         allowedAttributes: {
-          ...sanitizeHtml.defaults.allowedAttributes,
-          img: ['src', 'alt', 'title', 'width', 'height']
+          ...sanitizeHtml.defaults.allowedAttributes
         }
       })
     };

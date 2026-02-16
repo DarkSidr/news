@@ -3,7 +3,6 @@ import {
   stripHtml,
   buildNewsId,
   normalizePubDate,
-  extractImage,
   isLowQuality,
   stripReadMoreLinks,
   type FeedItemLike
@@ -71,12 +70,10 @@ function transformNewsItem(
     source: sourceName,
     language: sourceLanguage,
     isTranslated: false,
-    imageUrl: extractImage(feedItemLike),
     content: sanitizeHtml(fullContent, {
-      allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'figure', 'figcaption']),
+      allowedTags: sanitizeHtml.defaults.allowedTags.filter(tag => tag !== 'img' && tag !== 'figure' && tag !== 'figcaption'),
       allowedAttributes: {
-        ...sanitizeHtml.defaults.allowedAttributes,
-        img: ['src', 'alt', 'title', 'width', 'height']
+        ...sanitizeHtml.defaults.allowedAttributes
       }
     })
   };
@@ -139,11 +136,8 @@ async function runPipeline(
   const processed = filtered.map((item) => {
     let content = item.content;
 
-    if (item.imageUrl && content) {
-      const cleanUrl = item.imageUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const imgRegex = new RegExp(`<img[^>]+src=["']${cleanUrl}["'][^>]*>`, 'i');
-
-      content = content.replace(imgRegex, '');
+    if (content) {
+      // Clean up empty figures if any remain
       content = content.replace(/<figure[^>]*>\s*<\/figure>/gi, '');
     }
 

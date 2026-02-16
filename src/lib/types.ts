@@ -1,4 +1,4 @@
-export interface NewsItem {
+ export interface NewsItem {
   id: string;
   title: string;
   link: string;
@@ -10,6 +10,5 @@ export interface NewsItem {
   originalTitle?: string;
   originalContentSnippet?: string;
   originalContent?: string;
-  imageUrl?: string;
   content?: string;
 }

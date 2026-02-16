@@ -115,5 +115,29 @@ export const DEFAULT_RSS_FEEDS: RssSource[] = [
   }),
   new RssSource('CNCF Blog', 'https://www.cncf.io/feed/', {
     language: 'en'
+  }),
+  new RssSource('The Verge', 'https://www.theverge.com/rss/index.xml', {
+    language: 'en'
+  }),
+  new RssSource('Wired', 'https://www.wired.com/feed/rss', {
+    language: 'en'
+  }),
+  new RssSource('Ars Technica', 'https://feeds.arstechnica.com/arstechnica/index', {
+    language: 'en'
+  }),
+  new RssSource('Dev.to', 'https://dev.to/feed', {
+    language: 'en'
+  }),
+  new RssSource('React', 'https://react.dev/feed.xml', {
+    language: 'en'
+  }),
+  new RssSource('GitHub Blog', 'https://github.blog/feed/', {
+    language: 'en'
+  }),
+  new RssSource('OpenAI', 'https://openai.com/blog/rss.xml', {
+    language: 'en'
+  }),
+  new RssSource('PostgreSQL', 'https://www.postgresql.org/about/news/rss/', {
+    language: 'en'
   })
 ];
