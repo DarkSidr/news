@@ -1,17 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { flip } from 'svelte/animate';
-  import { fade } from 'svelte/transition';
-  import { cubicOut } from 'svelte/easing';
   import type { PageData } from './$types';
-  import NewsCard from '$lib/components/NewsCard.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import MasonryGrid from '$lib/components/MasonryGrid.svelte';
-  import { LayoutGrid, LayoutTemplate } from 'lucide-svelte';
 
   let { data } = $props<{ data: PageData }>();
   let now = $state(new Date());
-  let layout = $state<'masonry' | 'ltr'>('ltr');
   let updatedLabel = $derived(now.toLocaleTimeString('ru-RU'));
 
   const itemListSchema = $derived({
@@ -69,25 +63,6 @@
         </p>
       </div>
       <div class="flex items-center gap-4">
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-1 flex items-center shadow-sm border border-gray-100 dark:border-gray-700">
-           <button
-            class="p-2 rounded-md transition-all {layout === 'ltr' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 shadow-sm' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'}"
-            onclick={() => layout = 'ltr'}
-            aria-label="Сетка (слева направо)"
-            title="Сортировка слева направо"
-          >
-            <LayoutGrid size={20} />
-          </button>
-          <button
-            class="p-2 rounded-md transition-all {layout === 'masonry' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 shadow-sm' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'}"
-            onclick={() => layout = 'masonry'}
-            aria-label="Колонки (сверху вниз)"
-            title="Сортировка сверху вниз"
-          >
-             <LayoutTemplate size={20} class="rotate-90" />
-          </button>
-        </div>
-
         <div class="text-xs md:text-sm text-gray-400 dark:text-gray-500 font-mono hidden md:block" aria-live="polite">
           {updatedLabel}
         </div>
@@ -95,9 +70,9 @@
       </div>
     </header>
 
-    <main 
-      id="main-content" 
-      class="transition-all duration-500 ease-in-out {layout === 'masonry' ? 'columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6' : 'w-full'}" 
+    <main
+      id="main-content"
+      class="w-full"
       aria-label="Лента новостей"
     >
       {#if data.isFallback}
@@ -112,15 +87,7 @@
             </p>
         </div>
       {:else}
-        {#if layout === 'ltr'}
-           <MasonryGrid items={data.news} />
-        {:else}
-           {#each data.news as item (item.id)}
-             <div class="mb-6 break-inside-avoid" animate:flip={{ duration: 400, easing: cubicOut }} in:fade={{ duration: 300, delay: 100 }}>
-                <NewsCard news={item} />
-             </div>
-           {/each}
-        {/if}
+        <MasonryGrid items={data.news} />
       {/if}
     </main>
   </div>
