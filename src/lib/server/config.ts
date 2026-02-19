@@ -46,7 +46,11 @@ export const BLOCKED_KEYWORDS: string[] = (
   env.BLOCKED_KEYWORDS ||
   'zuckerberg,meta,facebook,instagram,whatsapp,messenger,threads,tiktok,' +
   'ukraine,kyiv,kiev,zelensky,zelenskyy,donbass,donetsk,luhansk,mariupol,kharkiv,kherson,zaporizhzhia,' +
-  'gay,lesbian,transgender,lgbtq,lgbt,queer,bisexual'
+  'gay,lesbian,transgender,lgbtq,lgbt,queer,bisexual,' +
+  'best deals,best deal,deals on,discount,promo code,coupon,% off,sale on,' +
+  'electric vehicle,electric car,airpods,earbuds,smartwatch,fitness tracker,' +
+  'netflix,disney,hbo,paramount,warner bros,movie trailer,film trailer,box office,' +
+  'vaccine,vaccination,climate change,greenhouse gas,emissions,epa,fossil fuel'
 )
   .split(',')
   .map((k) => k.trim().toLowerCase())

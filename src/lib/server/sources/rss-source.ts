@@ -144,10 +144,7 @@ export const DEFAULT_RSS_FEEDS: RssSource[] = [
   new RssSource('CNCF Blog', 'https://www.cncf.io/feed/', {
     language: 'en'
   }),
-  new RssSource('The Verge Tech', 'https://www.theverge.com/tech/rss/index.xml', {
-    language: 'en'
-  }),
-  new RssSource('Ars Technica', 'https://feeds.arstechnica.com/arstechnica/index', {
+  new RssSource('Ars Technica', 'https://feeds.arstechnica.com/arstechnica/technology-lab', {
     language: 'en'
   }),
   new RssSource('Dev.to', 'https://dev.to/feed', {
