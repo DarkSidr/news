@@ -4,6 +4,7 @@ import {
   buildNewsId,
   normalizePubDate,
   isLowQuality,
+  isAllowedNewsLanguage,
   stripReadMoreLinks,
   type FeedItemLike
 } from './news-utils';
@@ -128,6 +129,7 @@ async function runPipeline(
 
   const filtered = allItems.filter((item) => {
     if (isLowQuality(item)) return false;
+    if (!isAllowedNewsLanguage(item)) return false;
 
     const pubDate = new Date(item.pubDate);
     if (pubDate < cutoffDate) {

@@ -1,5 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import { buildNewsId, isLowQuality, normalizePubDate, stripHtml, stripReadMoreLinks } from './news-utils';
+import {
+  buildNewsId,
+  isAllowedNewsLanguage,
+  isLowQuality,
+  normalizePubDate,
+  stripHtml,
+  stripReadMoreLinks
+} from './news-utils';
 import type { NewsItem } from '$lib/types';
 
 describe('stripHtml', () => {
@@ -123,5 +130,45 @@ describe('isLowQuality', () => {
       title: 'Breaking News', 
       content: 'Breaking News' 
     })).toBe(true);
+  });
+});
+
+describe('isAllowedNewsLanguage', () => {
+  it('allows english content', () => {
+    expect(
+      isAllowedNewsLanguage({
+        title: 'OpenAI launches new coding model',
+        contentSnippet: 'New release improves reasoning and tool use.',
+        content: 'Detailed changelog and benchmarks.'
+      })
+    ).toBe(true);
+  });
+
+  it('allows russian content', () => {
+    expect(
+      isAllowedNewsLanguage({
+        title: 'Новый релиз Linux',
+        contentSnippet: 'Разработчики представили обновления ядра.',
+        content: 'Подробности доступны в официальном блоге.'
+      })
+    ).toBe(true);
+  });
+
+  it('blocks chinese and japanese scripts', () => {
+    expect(
+      isAllowedNewsLanguage({
+        title: '我如何建立一個能自我繁殖的 6 人 AI 團隊',
+        contentSnippet: '這不是 bug，是 feature。',
+        content: '詳細內容在文章中。'
+      })
+    ).toBe(false);
+
+    expect(
+      isAllowedNewsLanguage({
+        title: '日本語のニュースタイトル',
+        contentSnippet: '開発者向けの記事です。',
+        content: '詳細は本文を参照。'
+      })
+    ).toBe(false);
   });
 });

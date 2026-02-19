@@ -3,6 +3,7 @@ import type { NewsItem } from '$lib/types';
 import { db } from './index';
 import { articles, feedSources } from './schema';
 import { NEWS_RETENTION_DAYS } from '../config';
+import { isAllowedNewsLanguage } from '../news-utils';
 
 interface DbNewsRow {
   id: string;
@@ -95,7 +96,7 @@ export async function getLatestNews(limit = 100): Promise<NewsItem[]> {
     .orderBy(desc(articles.pubDate))
     .limit(limit);
 
-  return rows.map((row) =>
+  const items = rows.map((row) =>
     toNewsItem({
       id: row.id,
       title: row.title,
@@ -111,6 +112,8 @@ export async function getLatestNews(limit = 100): Promise<NewsItem[]> {
       isTranslated: row.isTranslated
     })
   );
+
+  return items.filter((item) => isAllowedNewsLanguage(item));
 }
 
 export async function deleteOldNewsFromDb(): Promise<number> {
@@ -152,7 +155,7 @@ export async function getNewsById(id: string): Promise<NewsItem | null> {
   
   const row = rows[0];
 
-  return toNewsItem({
+  const item = toNewsItem({
     id: row.id,
     title: row.title,
     translatedTitle: row.translatedTitle,
@@ -166,6 +169,8 @@ export async function getNewsById(id: string): Promise<NewsItem | null> {
     language: row.language,
     isTranslated: row.isTranslated
   });
+
+  return isAllowedNewsLanguage(item) ? item : null;
 }
 
 export async function getSitemapNews(limit = 100): Promise<DbSitemapRow[]> {

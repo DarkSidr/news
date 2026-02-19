@@ -18,6 +18,7 @@ import {
   buildNewsId,
   normalizePubDate,
   isLowQuality,
+  isAllowedNewsLanguage,
   stripReadMoreLinks,
   type FeedItemLike
 } from '../news-utils';
@@ -251,6 +252,10 @@ export class FeedFetcher {
       }
 
       if (this.containsBlockedKeywords(item)) {
+        return false;
+      }
+
+      if (!isAllowedNewsLanguage(item)) {
         return false;
       }
 

@@ -3,12 +3,14 @@ import { desc, gte, eq } from 'drizzle-orm';
 import { db } from '$lib/server/db';
 import { articles, feedSources } from '$lib/server/db/schema';
 import type { RequestHandler } from '@sveltejs/kit';
+import { isAllowedNewsLanguage } from '$lib/server/news-utils';
 
 export const GET: RequestHandler = async ({ url }) => {
   const limitParam = url.searchParams.get('limit');
   const sinceParam = url.searchParams.get('since');
 
   const limit = Math.min(parseInt(limitParam ?? '20', 10) || 20, 100);
+  const fetchLimit = Math.min(limit * 4, 400);
 
   const sinceDate = sinceParam ? new Date(sinceParam) : null;
   const validSince = sinceDate && !isNaN(sinceDate.getTime()) ? sinceDate : null;
@@ -29,10 +31,18 @@ export const GET: RequestHandler = async ({ url }) => {
     .innerJoin(feedSources, eq(articles.sourceId, feedSources.id))
     .where(validSince ? gte(articles.pubDate, validSince) : undefined)
     .orderBy(desc(articles.pubDate))
-    .limit(limit);
+    .limit(fetchLimit);
+
+  const filteredRows = rows.filter((row) =>
+    isAllowedNewsLanguage({
+      title: row.translatedTitle ?? row.title,
+      contentSnippet: row.translatedSnippet ?? row.contentSnippet ?? '',
+      content: undefined
+    })
+  );
 
   return json(
-    rows.map((row) => ({
+    filteredRows.slice(0, limit).map((row) => ({
       id: row.id,
       title: row.title,
       translatedTitle: row.translatedTitle ?? null,
