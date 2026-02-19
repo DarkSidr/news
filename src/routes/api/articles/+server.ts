@@ -21,7 +21,9 @@ export const GET: RequestHandler = async ({ url }) => {
       link: articles.link,
       pubDate: articles.pubDate,
       source: feedSources.name,
-      language: articles.language
+      language: articles.language,
+      contentSnippet: articles.contentSnippet,
+      translatedSnippet: articles.translatedSnippet
     })
     .from(articles)
     .innerJoin(feedSources, eq(articles.sourceId, feedSources.id))
@@ -34,6 +36,7 @@ export const GET: RequestHandler = async ({ url }) => {
       id: row.id,
       title: row.title,
       translatedTitle: row.translatedTitle ?? null,
+      snippet: row.translatedSnippet ?? row.contentSnippet ?? null,
       link: row.link,
       pubDate: row.pubDate.toISOString(),
       source: row.source,
