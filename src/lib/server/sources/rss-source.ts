@@ -147,18 +147,28 @@ export const DEFAULT_RSS_FEEDS: RssSource[] = [
   new RssSource('Ars Technica', 'https://feeds.arstechnica.com/arstechnica/technology-lab', {
     language: 'en'
   }),
-  new RssSource('Dev.to / JavaScript', 'https://dev.to/feed/tag/javascript', {
-    language: 'en'
-  }),
-  new RssSource('Dev.to / Python', 'https://dev.to/feed/tag/python', {
-    language: 'en'
-  }),
-  new RssSource('Dev.to / DevOps', 'https://dev.to/feed/tag/devops', {
-    language: 'en'
-  }),
-  new RssSource('Dev.to / AI', 'https://dev.to/feed/tag/ai', {
-    language: 'en'
-  }),
+  new RssSource('Dev.to / JavaScript', 'https://dev.to/feed/tag/javascript', { language: 'en' }),
+  new RssSource('Dev.to / TypeScript', 'https://dev.to/feed/tag/typescript', { language: 'en' }),
+  new RssSource('Dev.to / Python', 'https://dev.to/feed/tag/python', { language: 'en' }),
+  new RssSource('Dev.to / Rust', 'https://dev.to/feed/tag/rust', { language: 'en' }),
+  new RssSource('Dev.to / Go', 'https://dev.to/feed/tag/go', { language: 'en' }),
+  new RssSource('Dev.to / PHP', 'https://dev.to/feed/tag/php', { language: 'en' }),
+  new RssSource('Dev.to / Dart', 'https://dev.to/feed/tag/dart', { language: 'en' }),
+  new RssSource('Dev.to / Flutter', 'https://dev.to/feed/tag/flutter', { language: 'en' }),
+  new RssSource('Dev.to / Kotlin', 'https://dev.to/feed/tag/kotlin', { language: 'en' }),
+  new RssSource('Dev.to / React', 'https://dev.to/feed/tag/react', { language: 'en' }),
+  new RssSource('Dev.to / Vue', 'https://dev.to/feed/tag/vue', { language: 'en' }),
+  new RssSource('Dev.to / Angular', 'https://dev.to/feed/tag/angular', { language: 'en' }),
+  new RssSource('Dev.to / Next.js', 'https://dev.to/feed/tag/nextjs', { language: 'en' }),
+  new RssSource('Dev.to / Nuxt', 'https://dev.to/feed/tag/nuxt', { language: 'en' }),
+  new RssSource('Dev.to / Frontend', 'https://dev.to/feed/tag/frontend', { language: 'en' }),
+  new RssSource('Dev.to / Backend', 'https://dev.to/feed/tag/backend', { language: 'en' }),
+  new RssSource('Dev.to / Docker', 'https://dev.to/feed/tag/docker', { language: 'en' }),
+  new RssSource('Dev.to / DevOps', 'https://dev.to/feed/tag/devops', { language: 'en' }),
+  new RssSource('Dev.to / AI', 'https://dev.to/feed/tag/ai', { language: 'en' }),
+  new RssSource('Dev.to / Database', 'https://dev.to/feed/tag/database', { language: 'en' }),
+  new RssSource('Dev.to / API', 'https://dev.to/feed/tag/api', { language: 'en' }),
+  new RssSource('Dev.to / Strapi', 'https://dev.to/feed/tag/strapi', { language: 'en' }),
   new RssSource('React', 'https://react.dev/feed.xml', {
     language: 'en'
   }),
