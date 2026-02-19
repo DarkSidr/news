@@ -147,7 +147,16 @@ export const DEFAULT_RSS_FEEDS: RssSource[] = [
   new RssSource('Ars Technica', 'https://feeds.arstechnica.com/arstechnica/technology-lab', {
     language: 'en'
   }),
-  new RssSource('Dev.to', 'https://dev.to/feed', {
+  new RssSource('Dev.to / JavaScript', 'https://dev.to/feed/tag/javascript', {
+    language: 'en'
+  }),
+  new RssSource('Dev.to / Python', 'https://dev.to/feed/tag/python', {
+    language: 'en'
+  }),
+  new RssSource('Dev.to / DevOps', 'https://dev.to/feed/tag/devops', {
+    language: 'en'
+  }),
+  new RssSource('Dev.to / AI', 'https://dev.to/feed/tag/ai', {
     language: 'en'
   }),
   new RssSource('React', 'https://react.dev/feed.xml', {
