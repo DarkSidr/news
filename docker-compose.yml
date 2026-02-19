@@ -1,6 +1,6 @@
 services:
   app:
-    build: .
+    image: ghcr.io/darksidr/news:latest
     container_name: news-app
     restart: unless-stopped
     env_file: .env
