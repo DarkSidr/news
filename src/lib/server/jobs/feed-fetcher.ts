@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, ne, or } from 'drizzle-orm';
+import { and, desc, eq, isNull, ne, or, lt } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import sanitizeHtml from 'sanitize-html';
 import type { NewsItem } from '$lib/types';
@@ -9,7 +9,9 @@ import {
   BLOCKED_DOMAINS,
   MAX_SNIPPET_LENGTH,
   TRANSLATION_MAX_PER_RUN,
-  MAX_TRANSLATION_CONTENT_LENGTH
+  MAX_TRANSLATION_CONTENT_LENGTH,
+  BLOCKED_KEYWORDS,
+  NEWS_RETENTION_DAYS
 } from '../config';
 import {
   stripHtml,
@@ -211,6 +213,9 @@ export class FeedFetcher {
       }
     }
 
+    // Cleanup old news
+    await this.deleteOldNews();
+
     const totalDuration = Date.now() - startTime;
     const totalNew = results.reduce((sum, r) => sum + r.newItemsCount, 0);
     const totalTranslated = results.reduce((sum, r) => sum + r.translatedCount, 0);
@@ -242,6 +247,18 @@ export class FeedFetcher {
 
     const filtered = transformed.filter((item) => {
       if (isLowQuality(item)) {
+        return false;
+      }
+
+      if (this.containsBlockedKeywords(item)) {
+        return false;
+      }
+
+      // Filter out old news (older than retention window)
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - NEWS_RETENTION_DAYS);
+      const pubDate = new Date(item.pubDate);
+      if (pubDate < cutoffDate) {
         return false;
       }
 
@@ -452,5 +469,34 @@ export class FeedFetcher {
       .map((paragraph) => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`);
 
     return paragraphs.length > 0 ? paragraphs.join('') : `<p>${normalized}</p>`;
+  }
+
+  /**
+   * Проверить на наличие запрещённых ключевых слов
+   */
+  private containsBlockedKeywords(item: NewsItem): boolean {
+    const text = `${item.title} ${item.contentSnippet} ${item.content || ''}`.toLowerCase();
+    return BLOCKED_KEYWORDS.some((keyword) => text.includes(keyword));
+  }
+
+  /**
+   * Удалить старые новости (старше retention window)
+   */
+  private async deleteOldNews(): Promise<void> {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - NEWS_RETENTION_DAYS);
+
+      const result = await this.db
+        .delete(articles)
+        .where(lt(articles.pubDate, cutoffDate))
+        .returning({ id: articles.id });
+
+      if (result.length > 0) {
+        console.log(`[FeedFetcher] Deleted ${result.length} old articles`);
+      }
+    } catch (error) {
+      console.error('[FeedFetcher] Failed to delete old news:', error);
+    }
   }
 }

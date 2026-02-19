@@ -24,6 +24,9 @@ export const MAX_TRANSLATION_CONTENT_LENGTH = parsePositiveInt(
   env.MAX_TRANSLATION_CONTENT_LENGTH ?? '',
   5000
 );
+export const NEWS_RETENTION_DAYS = parsePositiveInt(env.NEWS_RETENTION_DAYS ?? '', 14);
+export const NEWS_FEED_LIMIT = parsePositiveInt(env.NEWS_FEED_LIMIT ?? '', 100);
+export const NEWS_PER_SOURCE_LIMIT = parsePositiveInt(env.NEWS_PER_SOURCE_LIMIT ?? '', 12);
 
 export const TRANSLATION_TIMEOUT_MS = parsePositiveInt(
   env.TRANSLATION_TIMEOUT_MS ?? '',
@@ -39,4 +42,10 @@ export const BLOCKED_DOMAINS: string[] = (env.BLOCKED_DOMAINS || 'css-doodle.com
   .map((domain: string) => domain.trim())
   .filter((domain: string) => domain.length > 0);
 
-
+export const BLOCKED_KEYWORDS: string[] = (
+  env.BLOCKED_KEYWORDS ||
+  'zuckerberg,meta,facebook,instagram,whatsapp,messenger,threads,tiktok'
+)
+  .split(',')
+  .map((k) => k.trim().toLowerCase())
+  .filter((k) => k.length > 0);

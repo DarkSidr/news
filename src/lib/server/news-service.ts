@@ -8,7 +8,13 @@ import {
   type FeedItemLike
 } from './news-utils';
 import { createNewsSources, getActiveSources } from './sources';
-import { BLOCKED_DOMAINS, RSS_TIMEOUT_MS, CACHE_TTL_MS, MAX_SNIPPET_LENGTH } from './config';
+import {
+  BLOCKED_DOMAINS,
+  RSS_TIMEOUT_MS,
+  CACHE_TTL_MS,
+  MAX_SNIPPET_LENGTH,
+  NEWS_RETENTION_DAYS
+} from './config';
 import type { NewsItem } from '$lib/types';
 import type { NewsSource, RawNewsItem, PipelineResult, NewsServiceConfig } from './types';
 
@@ -117,8 +123,16 @@ async function runPipeline(
   }
 
   // Filter: blocked domains + low quality
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - NEWS_RETENTION_DAYS);
+
   const filtered = allItems.filter((item) => {
     if (isLowQuality(item)) return false;
+
+    const pubDate = new Date(item.pubDate);
+    if (pubDate < cutoffDate) {
+      return false;
+    }
 
     try {
       const hostname = new URL(item.link).hostname;

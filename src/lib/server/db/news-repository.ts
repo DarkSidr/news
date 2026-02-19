@@ -1,7 +1,8 @@
-import { desc, eq, sql } from 'drizzle-orm';
+import { desc, eq, gte, lt, sql } from 'drizzle-orm';
 import type { NewsItem } from '$lib/types';
 import { db } from './index';
 import { articles, feedSources } from './schema';
+import { NEWS_RETENTION_DAYS } from '../config';
 
 interface DbNewsRow {
   id: string;
@@ -69,7 +70,10 @@ function toNewsItem(row: DbNewsRow): NewsItem {
   };
 }
 
-export async function getLatestNews(limit = 50): Promise<NewsItem[]> {
+export async function getLatestNews(limit = 100): Promise<NewsItem[]> {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - NEWS_RETENTION_DAYS);
+
   const rows = await db
     .select({
       id: articles.id,
@@ -87,6 +91,7 @@ export async function getLatestNews(limit = 50): Promise<NewsItem[]> {
     })
     .from(articles)
     .innerJoin(feedSources, eq(articles.sourceId, feedSources.id))
+    .where(gte(articles.pubDate, cutoffDate))
     .orderBy(desc(articles.pubDate))
     .limit(limit);
 
@@ -106,6 +111,18 @@ export async function getLatestNews(limit = 50): Promise<NewsItem[]> {
       isTranslated: row.isTranslated
     })
   );
+}
+
+export async function deleteOldNewsFromDb(): Promise<number> {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - NEWS_RETENTION_DAYS);
+
+  const deletedRows = await db
+    .delete(articles)
+    .where(lt(articles.pubDate, cutoffDate))
+    .returning({ id: articles.id });
+
+  return deletedRows.length;
 }
 
 export async function getNewsById(id: string): Promise<NewsItem | null> {

@@ -14,15 +14,31 @@ import { fade } from 'svelte/transition';
     else numCols = 1;
   });
 
-  // Distribute items into columns to preserve LTR order but stack vertically
-  // Col 0: 0, 3, 6
-  // Col 1: 1, 4, 7
-  // Col 2: 2, 5, 8
+  // Distribute items to the shortest column to balance height
   const columns = $derived.by(() => {
     const cols: NewsItem[][] = Array.from({ length: numCols }, () => []);
-    items.forEach((item: NewsItem, i: number) => {
-        cols[i % numCols].push(item);
-    });
+    const heights = new Array(numCols).fill(0);
+
+    for (const item of items) {
+      // Find the column with the minimum estimated height
+      let minColIndex = 0;
+      let minHeight = heights[0];
+
+      for (let i = 1; i < numCols; i++) {
+        if (heights[i] < minHeight) {
+          minHeight = heights[i];
+          minColIndex = i;
+        }
+      }
+
+      cols[minColIndex].push(item);
+      
+      // Estimate height: title (approx 2 lines) + snippet (approx 3-4 lines)
+      // We can use character count as a proxy for height
+      const contentLen = (item.title.length * 1.5) + (item.contentSnippet?.length ?? 0);
+      heights[minColIndex] += contentLen + 100; // +100 for padding/metadata
+    }
+
     return cols;
   });
 </script>
