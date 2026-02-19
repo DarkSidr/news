@@ -80,6 +80,14 @@ export const fetchLogs = pgTable('fetch_logs', {
 });
 
 /**
+ * Отправленные в Telegram статьи (для anti-duplication в n8n)
+ */
+export const telegramSentArticles = pgTable('telegram_sent_articles', {
+  articleId: text('article_id').primaryKey(),
+  sentAt: timestamp('sent_at', { withTimezone: true }).defaultNow().notNull()
+});
+
+/**
  * Relations (для JOIN-запросов)
  */
 export const feedSourcesRelations = relations(feedSources, ({ many }) => ({
@@ -112,3 +120,6 @@ export type NewArticle = typeof articles.$inferInsert;
 
 export type FetchLog = typeof fetchLogs.$inferSelect;
 export type NewFetchLog = typeof fetchLogs.$inferInsert;
+
+export type TelegramSentArticle = typeof telegramSentArticles.$inferSelect;
+export type NewTelegramSentArticle = typeof telegramSentArticles.$inferInsert;
