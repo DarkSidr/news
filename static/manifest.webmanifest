@@ -1,6 +1,6 @@
 {
-  "name": "TechNews",
-  "short_name": "TechNews",
+  "name": "Daily Dev News",
+  "short_name": "Daily Dev News",
   "description": "Интеллектуальный агрегатор технологических новостей",
   "lang": "ru",
   "start_url": "/",

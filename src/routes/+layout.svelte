@@ -9,7 +9,7 @@ let { children } = $props();
 const websiteSchema = {
 	'@context': 'https://schema.org',
 	'@type': 'WebSite',
-	name: 'TechNews',
+	name: 'Daily Dev News',
 	inLanguage: 'ru-RU',
 	description: 'Интеллектуальный агрегатор технологических новостей'
 };
@@ -25,11 +25,11 @@ onMount(() => {
 
 <svelte:head>
 	<link rel="icon" href="{favicon}" />
-	<meta name="application-name" content="TechNews" />
+	<meta name="application-name" content="Daily Dev News" />
 	<meta name="theme-color" content="#020617" />
 	<meta name="apple-mobile-web-app-capable" content="yes" />
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-	<meta name="apple-mobile-web-app-title" content="TechNews" />
+	<meta name="apple-mobile-web-app-title" content="Daily Dev News" />
 	<link rel="manifest" href="/manifest.webmanifest" />
 	<script type="application/ld+json">
 		{JSON.stringify(websiteSchema)}

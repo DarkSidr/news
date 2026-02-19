@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-  <title>Ошибка | TechNews</title>
+  <title>Ошибка | Daily Dev News</title>
   <meta name="robots" content="noindex" />
 </svelte:head>
 

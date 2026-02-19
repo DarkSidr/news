@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="20" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="800" fill="#0F172A" />
+  
+  <!-- Subtle Grid Pattern -->
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1E293B" stroke-width="1"/>
+  </pattern>
+  <rect width="800" height="800" fill="url(#grid)" />
+
+  <!-- Central Circular Container (Visual Guide, fits within Telegram circle) -->
+  <circle cx="400" cy="400" r="320" fill="none" stroke="#334155" stroke-width="2" opacity="0.5" />
+
+  <!-- Logo Content -->
+  <g transform="translate(144, 144) scale(1.0)">
+    <!-- Main D shape -->
+    <path d="M160 120 H 260 A 136 136 0 0 1 396 256 A 136 136 0 0 1 260 392 H 160 V 120 Z M 220 180 V 332 H 260 A 76 76 0 0 0 336 256 A 76 76 0 0 0 260 180 H 220 Z" fill="url(#grad)" filter="url(#glow)" />
+    <!-- Vertical Bar -->
+    <rect x="140" y="120" width="20" height="272" fill="url(#grad)" filter="url(#glow)" />
+  </g>
+
+  <!-- Text "Daily Dev" below, if space permits, but for avatar usually icon is better. 
+       Let's stick to the strong icon. -->
+</svg>

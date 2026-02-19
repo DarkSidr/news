@@ -98,13 +98,13 @@
 </script>
 
 <svelte:head>
-  <title>TechNews | Агрегатор технологических новостей</title>
+  <title>Daily Dev News | Агрегатор технологических новостей</title>
   <link rel="canonical" href={data.canonicalUrl} />
   <meta
     name="description"
     content="Интеллектуальный агрегатор новостей про разработку, ИИ и операционные системы в реальном времени."
   />
-  <meta property="og:title" content="TechNews | Агрегатор технологических новостей" />
+  <meta property="og:title" content="Daily Dev News | Агрегатор технологических новостей" />
   <meta
     property="og:description"
     content="Свежая технологическая повестка из OpenNET, Habr, Hacker News, Phoronix и TechCrunch."
@@ -121,7 +121,7 @@
     <header class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
       <div>
         <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-          Tech<span class="text-blue-500">News</span>
+          Daily Dev <span class="text-blue-500">News</span>
         </h1>
         <p class="text-gray-500 dark:text-gray-400 mt-2 font-medium">
           Интеллектуальный агрегатор <span class="text-gray-300 dark:text-gray-600">|</span> Лента в реальном
