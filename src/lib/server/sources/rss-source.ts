@@ -87,12 +87,40 @@ export class RssSource implements NewsSource {
  * Предустановленные RSS источники
  */
 export const DEFAULT_RSS_FEEDS: RssSource[] = [
+  // --- Русскоязычные источники ---
   new RssSource('OpenNET', 'https://www.opennet.ru/opennews/opennews_all_utf.rss', {
     language: 'ru'
   }),
-  new RssSource('Habr', 'https://habr.com/ru/rss/best/daily/?fl=ru', {
+  // Habr: только тематические хабы (программирование, AI, ОС, БД)
+  new RssSource('Habr / Python', 'https://habr.com/ru/rss/hub/python/articles/', {
     language: 'ru'
   }),
+  new RssSource('Habr / JavaScript', 'https://habr.com/ru/rss/hub/javascript/articles/', {
+    language: 'ru'
+  }),
+  new RssSource('Habr / Linux', 'https://habr.com/ru/rss/hub/linux/articles/', {
+    language: 'ru'
+  }),
+  new RssSource('Habr / ML', 'https://habr.com/ru/rss/hub/machine_learning/articles/', {
+    language: 'ru'
+  }),
+  new RssSource('Habr / Нейросети', 'https://habr.com/ru/rss/hub/neural_networks/articles/', {
+    language: 'ru'
+  }),
+  new RssSource('Habr / Базы данных', 'https://habr.com/ru/rss/hub/sql/articles/', {
+    language: 'ru'
+  }),
+  new RssSource('Habr / Веб-разработка', 'https://habr.com/ru/rss/hub/webdev/articles/', {
+    language: 'ru'
+  }),
+  new RssSource('Habr / DevOps', 'https://habr.com/ru/rss/hub/devops/articles/', {
+    language: 'ru'
+  }),
+  new RssSource('Habr / Open Source', 'https://habr.com/ru/rss/hub/open_source/articles/', {
+    language: 'ru'
+  }),
+
+  // --- Англоязычные источники ---
   new RssSource('HackerNews', 'https://news.ycombinator.com/rss', {
     language: 'en'
   }),
@@ -116,10 +144,7 @@ export const DEFAULT_RSS_FEEDS: RssSource[] = [
   new RssSource('CNCF Blog', 'https://www.cncf.io/feed/', {
     language: 'en'
   }),
-  new RssSource('The Verge', 'https://www.theverge.com/rss/index.xml', {
-    language: 'en'
-  }),
-  new RssSource('Wired', 'https://www.wired.com/feed/rss', {
+  new RssSource('The Verge Tech', 'https://www.theverge.com/tech/rss/index.xml', {
     language: 'en'
   }),
   new RssSource('Ars Technica', 'https://feeds.arstechnica.com/arstechnica/index', {
