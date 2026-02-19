@@ -26,6 +26,7 @@ COPY --from=builder --chown=appuser:appgroup /app/build ./build
 COPY --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules
 COPY --from=builder --chown=appuser:appgroup /app/package.json ./
 COPY --from=builder --chown=appuser:appgroup /app/drizzle ./drizzle
+COPY --from=builder --chown=appuser:appgroup /app/drizzle.config.ts ./
 
 USER appuser
 

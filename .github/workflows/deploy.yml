@@ -47,7 +47,7 @@ jobs:
             docker compose build app
 
             echo "==> Running DB migrations..."
-            docker compose run --rm -T app sh -c "npx drizzle-kit migrate"
+            docker compose run --rm -T app sh -c "npx drizzle-kit migrate --config drizzle.config.ts"
 
             echo "==> Restarting app (zero-downtime)..."
             docker compose up -d --no-deps app
