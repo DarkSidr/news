@@ -2,7 +2,7 @@ import { desc, eq, gte, lt, sql } from 'drizzle-orm';
 import type { NewsItem } from '$lib/types';
 import { db } from './index';
 import { articles, feedSources } from './schema';
-import { NEWS_RETENTION_DAYS } from '../config';
+import { NEWS_RETENTION_DAYS, BLOCKED_KEYWORDS } from '../config';
 import { isAllowedNewsLanguage } from '../news-utils';
 
 interface DbNewsRow {
@@ -113,7 +113,11 @@ export async function getLatestNews(limit = 100): Promise<NewsItem[]> {
     })
   );
 
-  return items.filter((item) => isAllowedNewsLanguage(item));
+  return items.filter((item) => {
+    if (!isAllowedNewsLanguage(item)) return false;
+    const text = `${item.title} ${item.originalTitle ?? ''} ${item.contentSnippet} ${item.originalContentSnippet ?? ''} ${item.content ?? ''}`.toLowerCase();
+    return !BLOCKED_KEYWORDS.some((keyword) => text.includes(keyword));
+  });
 }
 
 export async function deleteOldNewsFromDb(): Promise<number> {
