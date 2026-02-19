@@ -58,7 +58,7 @@
           Tech<span class="text-blue-500">News</span>
         </h1>
         <p class="text-gray-500 dark:text-gray-400 mt-2 font-medium">
-          Интеллектуальный агрегатор <span class="text-gray-300 dark:text-gray-600">|</span> Лента в реальном
+          Интеллектуальный агрегатор test<span class="text-gray-300 dark:text-gray-600">|</span> Лента в реальном
           времени
         </p>
       </div>
