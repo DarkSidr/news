@@ -1,0 +1,37 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            set -e
+            cd /srv/news
+
+            echo "==> Pulling latest code..."
+            git pull origin main
+
+            echo "==> Building new Docker image..."
+            docker compose build app
+
+            echo "==> Restarting app (zero-downtime)..."
+            docker compose up -d --no-deps app
+
+            echo "==> Running DB migrations..."
+            docker compose exec -T app sh -c "DATABASE_URL=$DATABASE_URL npx drizzle-kit migrate" || true
+
+            echo "==> Removing old images..."
+            docker image prune -f
+
+            echo "==> Done!"

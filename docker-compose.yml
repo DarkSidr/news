@@ -1,0 +1,63 @@
+services:
+  app:
+    build: .
+    container_name: news-app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - news-internal
+      - proxy
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+    labels:
+      # Caddy reverse proxy (через caddy-docker-proxy)
+      caddy: "${DOMAIN:-news.example.com}"
+      caddy.reverse_proxy: "{{upstreams 3000}}"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: news-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-news}
+      POSTGRES_USER: ${POSTGRES_USER:-news}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - news-internal
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    # Настройки для слабого сервера (1 CPU, 2GB RAM)
+    command: >
+      postgres
+        -c shared_buffers=64MB
+        -c effective_cache_size=128MB
+        -c work_mem=4MB
+        -c maintenance_work_mem=32MB
+        -c max_connections=20
+        -c wal_buffers=2MB
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-news}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+
+networks:
+  news-internal:
+    driver: bridge
+  proxy:
+    external: true
