@@ -9,6 +9,8 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# DATABASE_URL нужен только чтобы пройти SvelteKit analyse — реальное значение подставляется в runtime
+ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
 RUN npm run build && npm prune --production
 
 # ---- Stage 3: Production Runner ----
