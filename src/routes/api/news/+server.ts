@@ -12,7 +12,7 @@ export const GET: RequestHandler = async ({ url }) => {
   const offset = Math.max(0, parseInt(url.searchParams.get('offset') ?? '0', 10) || 0);
   const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get('limit') ?? '30', 10) || 30));
 
-  const { items, hasMore } = await getLatestNewsPaged(offset, limit);
+  const { items, hasMore, total } = await getLatestNewsPaged(offset, limit);
 
-  return json({ items, hasMore });
+  return json({ items, hasMore, total });
 };

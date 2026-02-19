@@ -18,7 +18,7 @@ export const load: PageServerLoad = async ({ url, setHeaders, fetch }) => {
 
   try {
     await deleteOldNewsFromDb();
-    const [{ items: news, hasMore }, sources] = await Promise.all([
+    const [{ items: news, hasMore, total }, sources] = await Promise.all([
       getLatestNewsPaged(0, PAGE_SIZE),
       getActiveSources()
     ]);
@@ -26,6 +26,7 @@ export const load: PageServerLoad = async ({ url, setHeaders, fetch }) => {
     return {
       news,
       hasMore,
+      total,
       sources,
       generatedAt: new Date().toISOString(),
       canonicalUrl,

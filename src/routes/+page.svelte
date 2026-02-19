@@ -16,10 +16,12 @@
   let items = $state<NewsItem[]>([]);
   let hasMore = $state(false);
   let isLoadingMore = $state(false);
+  let total = $state(0);
 
   $effect(() => {
     items = [...data.news];
     hasMore = data.hasMore;
+    total = data.total ?? 0;
   });
 
   async function loadMore() {
@@ -28,9 +30,11 @@
     try {
       const res = await fetch(`/api/news?offset=${items.length}&limit=30`);
       if (!res.ok) return;
-      const body = (await res.json()) as { items: NewsItem[]; hasMore: boolean };
-      items = [...items, ...body.items];
+      const body = (await res.json()) as { items: NewsItem[]; hasMore: boolean; total: number };
+      const existingIds = new Set(items.map((i) => i.id));
+      items = [...items, ...body.items.filter((i) => !existingIds.has(i.id))];
       hasMore = body.hasMore;
+      if (body.total) total = body.total;
     } finally {
       isLoadingMore = false;
     }
@@ -47,7 +51,7 @@
 
   const selectedSourceMeta = $derived.by(() => {
     if (selectedSource === 'Все источники') {
-      return `${items.length} новостей`;
+      return total > 0 ? `${total} новостей` : `${items.length} новостей`;
     }
 
     return `${filteredNews.length} новостей`;

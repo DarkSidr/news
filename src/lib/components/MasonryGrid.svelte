@@ -20,49 +20,84 @@ import { fade } from 'svelte/transition';
     else numCols = 1;
   });
 
-  // Запуск loadMore при появлении sentinel в viewport
+  // Запуск loadMore при появлении sentinel в viewport.
+  // Читаем isLoadingMore и hasMore синхронно — это создаёт реактивную зависимость,
+  // поэтому observer пересоздаётся только когда они меняются.
+  // Пока идёт загрузка (isLoadingMore=true) или нечего грузить (hasMore=false) — observer не создаётся.
   $effect(() => {
-    if (!sentinel || !onLoadMore) return;
+    if (!sentinel || !onLoadMore || isLoadingMore || !hasMore) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+        if (entries[0].isIntersecting) {
           onLoadMore();
         }
       },
-      { rootMargin: '200px' }
+      { rootMargin: '600px' }
     );
 
     observer.observe(sentinel);
     return () => observer.disconnect();
   });
 
-  // Distribute items to the shortest column to balance height
-  const columns = $derived.by(() => {
-    const cols: NewsItem[][] = Array.from({ length: numCols }, () => []);
-    const heights = new Array(numCols).fill(0);
+  // Инкрементальное распределение по колонкам:
+  // при добавлении новых items существующие карточки не трогаются — только новые добавляются
+  // в самую короткую колонку. При изменении numCols — полный пересчёт.
+  let columns = $state<NewsItem[][]>([]);
+  let colHeights: number[] = [];
+  let knownItemsLen = 0;
+  let knownNumCols = 0;
 
-    for (const item of items) {
-      // Find the column with the minimum estimated height
-      let minColIndex = 0;
-      let minHeight = heights[0];
+  function estimateHeight(item: NewsItem): number {
+    return (item.title.length * 1.5) + (item.contentSnippet?.length ?? 0) + 100;
+  }
 
-      for (let i = 1; i < numCols; i++) {
-        if (heights[i] < minHeight) {
-          minHeight = heights[i];
-          minColIndex = i;
-        }
+  function appendItems(newItems: NewsItem[]) {
+    const cols = columns.map((col) => [...col]);
+    for (const item of newItems) {
+      let minIdx = 0;
+      for (let i = 1; i < cols.length; i++) {
+        if (colHeights[i] < colHeights[minIdx]) minIdx = i;
       }
-
-      cols[minColIndex].push(item);
-
-      // Estimate height: title (approx 2 lines) + snippet (approx 3-4 lines)
-      // We can use character count as a proxy for height
-      const contentLen = (item.title.length * 1.5) + (item.contentSnippet?.length ?? 0);
-      heights[minColIndex] += contentLen + 100; // +100 for padding/metadata
+      cols[minIdx].push(item);
+      colHeights[minIdx] += estimateHeight(item);
     }
+    columns = cols;
+  }
 
-    return cols;
+  function rebuildAll(allItems: NewsItem[], n: number) {
+    const cols: NewsItem[][] = Array.from({ length: n }, () => []);
+    colHeights = new Array(n).fill(0);
+    for (const item of allItems) {
+      let minIdx = 0;
+      for (let i = 1; i < n; i++) {
+        if (colHeights[i] < colHeights[minIdx]) minIdx = i;
+      }
+      cols[minIdx].push(item);
+      colHeights[minIdx] += estimateHeight(item);
+    }
+    columns = cols;
+  }
+
+  $effect(() => {
+    const n = numCols;
+    const len = items.length;
+    const snapshot = items;
+
+    if (n !== knownNumCols) {
+      // Число колонок изменилось — пересчитываем всё
+      rebuildAll(snapshot, n);
+      knownNumCols = n;
+      knownItemsLen = len;
+    } else if (len > knownItemsLen) {
+      // Подгрузились новые items — добавляем только их, не трогая существующие
+      appendItems(snapshot.slice(knownItemsLen));
+      knownItemsLen = len;
+    } else if (len < knownItemsLen || len === 0) {
+      // items сбросились (новый фильтр / смена данных) — пересчитываем всё
+      rebuildAll(snapshot, n);
+      knownItemsLen = len;
+    }
   });
 </script>
 

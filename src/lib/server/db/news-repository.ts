@@ -122,33 +122,42 @@ export async function getLatestNews(): Promise<NewsItem[]> {
 export async function getLatestNewsPaged(
   offset: number,
   limit: number
-): Promise<{ items: NewsItem[]; hasMore: boolean }> {
+): Promise<{ items: NewsItem[]; hasMore: boolean; total: number }> {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - NEWS_RETENTION_DAYS);
 
   // Over-fetch to compensate for rows filtered by language/keywords
   const fetchLimit = Math.max(Math.ceil((offset + limit) * 2.5) + 50, 150);
 
-  const rows = await db
-    .select({
-      id: articles.id,
-      title: articles.title,
-      translatedTitle: articles.translatedTitle,
-      link: articles.link,
-      pubDate: articles.pubDate,
-      contentSnippet: articles.contentSnippet,
-      translatedSnippet: articles.translatedSnippet,
-      content: articles.content,
-      translatedContent: articles.translatedContent,
-      source: feedSources.name,
-      language: articles.language,
-      isTranslated: articles.isTranslated
-    })
-    .from(articles)
-    .innerJoin(feedSources, eq(articles.sourceId, feedSources.id))
-    .where(gte(articles.pubDate, cutoffDate))
-    .orderBy(desc(articles.pubDate))
-    .limit(fetchLimit);
+  const [rows, countRows] = await Promise.all([
+    db
+      .select({
+        id: articles.id,
+        title: articles.title,
+        translatedTitle: articles.translatedTitle,
+        link: articles.link,
+        pubDate: articles.pubDate,
+        contentSnippet: articles.contentSnippet,
+        translatedSnippet: articles.translatedSnippet,
+        content: articles.content,
+        translatedContent: articles.translatedContent,
+        source: feedSources.name,
+        language: articles.language,
+        isTranslated: articles.isTranslated
+      })
+      .from(articles)
+      .innerJoin(feedSources, eq(articles.sourceId, feedSources.id))
+      .where(gte(articles.pubDate, cutoffDate))
+      .orderBy(desc(articles.pubDate))
+      .limit(fetchLimit),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(articles)
+      .innerJoin(feedSources, eq(articles.sourceId, feedSources.id))
+      .where(gte(articles.pubDate, cutoffDate))
+  ]);
+
+  const total = countRows[0]?.count ?? 0;
 
   const filtered = rows
     .map((row) =>
@@ -176,7 +185,8 @@ export async function getLatestNewsPaged(
 
   return {
     items: filtered.slice(offset, offset + limit),
-    hasMore: filtered.length > offset + limit
+    hasMore: filtered.length > offset + limit,
+    total
   };
 }
 
