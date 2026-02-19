@@ -71,7 +71,7 @@ function toNewsItem(row: DbNewsRow): NewsItem {
   };
 }
 
-export async function getLatestNews(limit = 100): Promise<NewsItem[]> {
+export async function getLatestNews(): Promise<NewsItem[]> {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - NEWS_RETENTION_DAYS);
 
@@ -93,8 +93,7 @@ export async function getLatestNews(limit = 100): Promise<NewsItem[]> {
     .from(articles)
     .innerJoin(feedSources, eq(articles.sourceId, feedSources.id))
     .where(gte(articles.pubDate, cutoffDate))
-    .orderBy(desc(articles.pubDate))
-    .limit(limit);
+    .orderBy(desc(articles.pubDate));
 
   const items = rows.map((row) =>
     toNewsItem({
