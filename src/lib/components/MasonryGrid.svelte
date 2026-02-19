@@ -45,9 +45,9 @@ import { fade } from 'svelte/transition';
 
 <svelte:window bind:innerWidth />
 
-<div class="flex flex-col md:flex-row gap-6 items-start">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
   {#each columns as column, i (i)}
-    <div class="flex flex-col gap-6 flex-1 w-full relative">
+    <div class="flex flex-col gap-6">
         {#each column as item (item.id)}
             <div in:fade={{ duration: 300 }}>
                 <NewsCard news={item} />
