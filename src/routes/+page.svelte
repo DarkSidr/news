@@ -13,9 +13,14 @@
   let sourceMenuRoot: HTMLDivElement | null = null;
 
   // Пагинация
-  let items = $state<NewsItem[]>(data.news);
-  let hasMore = $state(data.hasMore);
+  let items = $state<NewsItem[]>([]);
+  let hasMore = $state(false);
   let isLoadingMore = $state(false);
+
+  $effect(() => {
+    items = [...data.news];
+    hasMore = data.hasMore;
+  });
 
   async function loadMore() {
     if (isLoadingMore || !hasMore) return;
