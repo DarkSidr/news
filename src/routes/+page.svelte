@@ -12,19 +12,37 @@
   let isSourceMenuOpen = $state(false);
   let sourceMenuRoot: HTMLDivElement | null = null;
 
+  // Пагинация
+  let items = $state<NewsItem[]>(data.news);
+  let hasMore = $state(data.hasMore);
+  let isLoadingMore = $state(false);
+
+  async function loadMore() {
+    if (isLoadingMore || !hasMore) return;
+    isLoadingMore = true;
+    try {
+      const res = await fetch(`/api/news?offset=${items.length}&limit=30`);
+      if (!res.ok) return;
+      const body = (await res.json()) as { items: NewsItem[]; hasMore: boolean };
+      items = [...items, ...body.items];
+      hasMore = body.hasMore;
+    } finally {
+      isLoadingMore = false;
+    }
+  }
+
   const uniqueSources = $derived.by<string[]>(() => {
-    const sources = new Set<string>(data.news.map((n: NewsItem) => n.source));
-    return ['Все источники', ...Array.from(sources).sort()];
+    return ['Все источники', ...data.sources];
   });
 
   const filteredNews = $derived.by(() => {
-    if (selectedSource === 'Все источники') return data.news;
-    return data.news.filter((n: NewsItem) => n.source === selectedSource);
+    if (selectedSource === 'Все источники') return items;
+    return items.filter((n: NewsItem) => n.source === selectedSource);
   });
 
   const selectedSourceMeta = $derived.by(() => {
     if (selectedSource === 'Все источники') {
-      return `${data.news.length} новостей`;
+      return `${items.length} новостей`;
     }
 
     return `${filteredNews.length} новостей`;
@@ -230,7 +248,12 @@
             </p>
         </div>
       {:else}
-        <MasonryGrid items={filteredNews} />
+        <MasonryGrid
+          items={filteredNews}
+          {hasMore}
+          {isLoadingMore}
+          onLoadMore={loadMore}
+        />
       {/if}
     </main>
   </div>

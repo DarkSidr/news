@@ -1,4 +1,4 @@
-import { desc, eq, gte, lt, sql } from 'drizzle-orm';
+import { asc, desc, eq, gte, lt, sql } from 'drizzle-orm';
 import type { NewsItem } from '$lib/types';
 import { db } from './index';
 import { articles, feedSources } from './schema';
@@ -117,6 +117,75 @@ export async function getLatestNews(): Promise<NewsItem[]> {
     const text = `${item.title} ${item.originalTitle ?? ''} ${item.contentSnippet} ${item.originalContentSnippet ?? ''} ${item.content ?? ''}`.toLowerCase();
     return !BLOCKED_KEYWORDS.some((keyword) => text.includes(keyword));
   });
+}
+
+export async function getLatestNewsPaged(
+  offset: number,
+  limit: number
+): Promise<{ items: NewsItem[]; hasMore: boolean }> {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - NEWS_RETENTION_DAYS);
+
+  // Over-fetch to compensate for rows filtered by language/keywords
+  const fetchLimit = Math.max(Math.ceil((offset + limit) * 2.5) + 50, 150);
+
+  const rows = await db
+    .select({
+      id: articles.id,
+      title: articles.title,
+      translatedTitle: articles.translatedTitle,
+      link: articles.link,
+      pubDate: articles.pubDate,
+      contentSnippet: articles.contentSnippet,
+      translatedSnippet: articles.translatedSnippet,
+      content: articles.content,
+      translatedContent: articles.translatedContent,
+      source: feedSources.name,
+      language: articles.language,
+      isTranslated: articles.isTranslated
+    })
+    .from(articles)
+    .innerJoin(feedSources, eq(articles.sourceId, feedSources.id))
+    .where(gte(articles.pubDate, cutoffDate))
+    .orderBy(desc(articles.pubDate))
+    .limit(fetchLimit);
+
+  const filtered = rows
+    .map((row) =>
+      toNewsItem({
+        id: row.id,
+        title: row.title,
+        translatedTitle: row.translatedTitle,
+        link: row.link,
+        pubDate: row.pubDate,
+        contentSnippet: row.contentSnippet,
+        translatedSnippet: row.translatedSnippet,
+        content: row.content,
+        translatedContent: row.translatedContent,
+        source: row.source,
+        language: row.language,
+        isTranslated: row.isTranslated
+      })
+    )
+    .filter((item) => {
+      if (!isAllowedNewsLanguage(item)) return false;
+      const text =
+        `${item.title} ${item.originalTitle ?? ''} ${item.contentSnippet} ${item.originalContentSnippet ?? ''} ${item.content ?? ''}`.toLowerCase();
+      return !BLOCKED_KEYWORDS.some((keyword) => text.includes(keyword));
+    });
+
+  return {
+    items: filtered.slice(offset, offset + limit),
+    hasMore: filtered.length > offset + limit
+  };
+}
+
+export async function getActiveSources(): Promise<string[]> {
+  const rows = await db
+    .select({ name: feedSources.name })
+    .from(feedSources)
+    .orderBy(asc(feedSources.name));
+  return rows.map((r) => r.name);
 }
 
 export async function deleteOldNewsFromDb(): Promise<number> {

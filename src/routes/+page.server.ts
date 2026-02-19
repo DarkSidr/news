@@ -1,7 +1,13 @@
 import type { PageServerLoad } from './$types';
 import { error } from '@sveltejs/kit';
-import { deleteOldNewsFromDb, getLatestNews } from '$lib/server/db/news-repository';
+import {
+  deleteOldNewsFromDb,
+  getLatestNewsPaged,
+  getActiveSources
+} from '$lib/server/db/news-repository';
 import { fetchAllNews } from '$lib/server/news-service';
+
+const PAGE_SIZE = 30;
 
 export const load: PageServerLoad = async ({ url, setHeaders, fetch }) => {
   setHeaders({
@@ -12,10 +18,15 @@ export const load: PageServerLoad = async ({ url, setHeaders, fetch }) => {
 
   try {
     await deleteOldNewsFromDb();
-    const news = await getLatestNews();
+    const [{ items: news, hasMore }, sources] = await Promise.all([
+      getLatestNewsPaged(0, PAGE_SIZE),
+      getActiveSources()
+    ]);
 
     return {
       news,
+      hasMore,
+      sources,
       generatedAt: new Date().toISOString(),
       canonicalUrl,
       isFallback: false
@@ -23,10 +34,14 @@ export const load: PageServerLoad = async ({ url, setHeaders, fetch }) => {
   } catch (err) {
     console.error('Database connection failed, falling back to RSS:', err);
     try {
-      const news = await fetchAllNews(fetch);
+      const allNews = await fetchAllNews(fetch);
+      const news = allNews.slice(0, PAGE_SIZE);
+      const sources = [...new Set(allNews.map((n) => n.source))].sort();
 
       return {
         news,
+        hasMore: allNews.length > PAGE_SIZE,
+        sources,
         generatedAt: new Date().toISOString(),
         canonicalUrl,
         isFallback: true
