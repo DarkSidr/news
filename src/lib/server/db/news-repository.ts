@@ -128,51 +128,6 @@ export async function deleteOldNewsFromDb(): Promise<number> {
   return deletedRows.length;
 }
 
-export async function getNewsById(id: string): Promise<NewsItem | null> {
-  const rows = await db
-    .select({
-      id: articles.id,
-      title: articles.title,
-      translatedTitle: articles.translatedTitle,
-      link: articles.link,
-      pubDate: articles.pubDate,
-      contentSnippet: articles.contentSnippet,
-      translatedSnippet: articles.translatedSnippet,
-      content: articles.content,
-      translatedContent: articles.translatedContent,
-      source: feedSources.name,
-      language: articles.language,
-      isTranslated: articles.isTranslated
-    })
-    .from(articles)
-    .innerJoin(feedSources, eq(articles.sourceId, feedSources.id))
-    .where(eq(articles.id, id))
-    .limit(1);
-
-  if (rows.length === 0) {
-    return null;
-  }
-  
-  const row = rows[0];
-
-  const item = toNewsItem({
-    id: row.id,
-    title: row.title,
-    translatedTitle: row.translatedTitle,
-    link: row.link,
-    pubDate: row.pubDate,
-    contentSnippet: row.contentSnippet,
-    translatedSnippet: row.translatedSnippet,
-    content: row.content,
-    translatedContent: row.translatedContent,
-    source: row.source,
-    language: row.language,
-    isTranslated: row.isTranslated
-  });
-
-  return isAllowedNewsLanguage(item) ? item : null;
-}
-
 export async function getSitemapNews(limit = 100): Promise<DbSitemapRow[]> {
   const rows = await db
     .select({

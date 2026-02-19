@@ -1,10 +1,9 @@
 import { and, desc, eq, isNull, ne, or, lt } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import sanitizeHtml from 'sanitize-html';
 import type { NewsItem } from '$lib/types';
 import { DEFAULT_RSS_FEEDS } from '../sources/rss-source';
 import * as schema from '../db/schema';
-import { articles, feedSources, fetchLogs } from '../db/schema';
+import { articles, feedSources, fetchLogs, telegramSentArticles } from '../db/schema';
 import {
   BLOCKED_DOMAINS,
   MAX_SNIPPET_LENGTH,
@@ -15,15 +14,12 @@ import {
 } from '../config';
 import {
   stripHtml,
-  buildNewsId,
-  normalizePubDate,
   isLowQuality,
   isAllowedNewsLanguage,
   stripReadMoreLinks,
-  type FeedItemLike
+  transformRawToNewsItem
 } from '../news-utils';
 import { createNewsSource } from '../sources/factory';
-import { RssSource } from '../sources/rss-source';
 import type { RawNewsItem } from '../types';
 import type { FeedSource as DbFeedSource } from '../db/schema';
 import type { NewFeedSource } from '../db/schema';
@@ -243,7 +239,7 @@ export class FeedFetcher {
 
     const rawItems = await newsSource.fetch(this.fetchFn);
     const transformed = rawItems.map((rawItem, index) =>
-      this.transformRawNewsItem(rawItem, source.name, source.language, index)
+      transformRawToNewsItem(rawItem, source.name, source.language, index, MAX_SNIPPET_LENGTH)
     );
 
     const filtered = transformed.filter((item) => {
@@ -286,47 +282,6 @@ export class FeedFetcher {
 
       return { ...item, content };
     });
-  }
-
-  /**
-   * Преобразование сырых RSS-данных в формат NewsItem
-   */
-  private transformRawNewsItem(
-    raw: RawNewsItem,
-    sourceName: string,
-    sourceLanguage: string,
-    index: number
-  ): NewsItem {
-    const feedItemLike: FeedItemLike = {
-      guid: raw.guid,
-      link: raw.link,
-      title: raw.title,
-      pubDate: raw.pubDate,
-      enclosure: raw.enclosure,
-      'media:content': raw['media:content'],
-      content: raw.content,
-      contentSnippet: raw.contentSnippet,
-      'content:encoded': raw['content:encoded']
-    };
-
-    const fullContent = raw['content:encoded'] || raw.content || raw.contentSnippet || '';
-
-    return {
-      id: buildNewsId(sourceName, feedItemLike, index),
-      title: stripHtml(raw.title || 'Без заголовка'),
-      link: raw.link,
-      pubDate: normalizePubDate(raw.pubDate),
-      contentSnippet: stripHtml(raw.contentSnippet || fullContent).slice(0, MAX_SNIPPET_LENGTH),
-      source: sourceName,
-      language: sourceLanguage,
-      isTranslated: false,
-      content: sanitizeHtml(fullContent, {
-        allowedTags: sanitizeHtml.defaults.allowedTags.filter(tag => tag !== 'img' && tag !== 'figure' && tag !== 'figcaption'),
-        allowedAttributes: {
-          ...sanitizeHtml.defaults.allowedAttributes
-        }
-      })
-    };
   }
 
   /**
@@ -499,6 +454,16 @@ export class FeedFetcher {
 
       if (result.length > 0) {
         console.log(`[FeedFetcher] Deleted ${result.length} old articles`);
+      }
+
+      // Cleanup old telegram_sent_articles records (same retention policy)
+      const telegramResult = await this.db
+        .delete(telegramSentArticles)
+        .where(lt(telegramSentArticles.sentAt, cutoffDate))
+        .returning({ articleId: telegramSentArticles.articleId });
+
+      if (telegramResult.length > 0) {
+        console.log(`[FeedFetcher] Deleted ${telegramResult.length} old telegram records`);
       }
     } catch (error) {
       console.error('[FeedFetcher] Failed to delete old news:', error);

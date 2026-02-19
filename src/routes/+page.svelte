@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import type { PageData } from './$types';
   import type { NewsItem } from '$lib/types';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
@@ -43,7 +42,7 @@
     }))
   });
 
-  onMount(() => {
+  $effect(() => {
     // Prevent layout shift: wait for hydration
     isLoaded = true;
     now = new Date(data.generatedAt);

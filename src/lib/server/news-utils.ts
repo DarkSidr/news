@@ -21,6 +21,66 @@ export type FeedItemLike = {
   description?: string;
 };
 
+export type RawNewsItemLike = {
+  guid?: string;
+  link?: string;
+  title?: string;
+  pubDate?: string;
+  enclosure?: { url: string; type?: string };
+  'media:content'?: { $: { url: string } } | { $: { url: string } }[];
+  content?: string;
+  contentSnippet?: string;
+  contentEncoded?: string;
+  'content:encoded'?: string;
+};
+
+/**
+ * Преобразовать сырые RSS-данные в формат NewsItem.
+ * Общая функция для news-service.ts и feed-fetcher.ts.
+ */
+export function transformRawToNewsItem(
+  raw: RawNewsItemLike,
+  sourceName: string,
+  sourceLanguage: string,
+  index: number,
+  maxSnippetLength: number = 200
+): NewsItem {
+  const feedItemLike: FeedItemLike = {
+    guid: raw.guid,
+    link: raw.link,
+    title: raw.title,
+    pubDate: raw.pubDate,
+    enclosure: raw.enclosure,
+    'media:content': raw['media:content'],
+    content: raw.content,
+    contentSnippet: raw.contentSnippet,
+    'content:encoded': raw['content:encoded']
+  };
+
+  const fullContent =
+    raw['content:encoded'] || raw.content || raw.contentSnippet || '';
+
+  return {
+    id: buildNewsId(sourceName, feedItemLike, index),
+    title: stripHtml(raw.title || 'Без заголовка'),
+    link: raw.link || '',
+    pubDate: normalizePubDate(raw.pubDate),
+    contentSnippet: stripHtml(raw.contentSnippet || fullContent).slice(
+      0,
+      maxSnippetLength
+    ),
+    source: sourceName,
+    language: sourceLanguage,
+    isTranslated: false,
+    content: sanitizeHtml(fullContent, {
+      allowedTags: sanitizeHtml.defaults.allowedTags.filter(tag => tag !== 'img' && tag !== 'figure' && tag !== 'figcaption'),
+      allowedAttributes: {
+        ...sanitizeHtml.defaults.allowedAttributes
+      }
+    })
+  };
+}
+
 export function stripHtml(value: string): string {
   const sanitized = sanitizeHtml(value, {
     allowedTags: [],

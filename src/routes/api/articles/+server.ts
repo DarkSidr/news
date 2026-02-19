@@ -5,6 +5,17 @@ import { articles, feedSources } from '$lib/server/db/schema';
 import type { RequestHandler } from '@sveltejs/kit';
 import { isAllowedNewsLanguage } from '$lib/server/news-utils';
 
+/**
+ * Public API endpoint for fetching latest news.
+ * Used by n8n automation and external integrations.
+ *
+ * Query params:
+ * - limit: max items to return (default: 20, max: 100)
+ * - since: ISO 8601 date filter (optional)
+ *
+ * Note: This is a public endpoint — data is already public on the main page.
+ * Rate limiting is handled by reverse proxy (Caddy).
+ */
 export const GET: RequestHandler = async ({ url }) => {
   const limitParam = url.searchParams.get('limit');
   const sinceParam = url.searchParams.get('since');

@@ -1,4 +1,3 @@
-import sanitizeHtml from 'sanitize-html';
 import {
   stripHtml,
   buildNewsId,
@@ -6,7 +5,7 @@ import {
   isLowQuality,
   isAllowedNewsLanguage,
   stripReadMoreLinks,
-  type FeedItemLike
+  transformRawToNewsItem
 } from './news-utils';
 import { createNewsSources, getActiveSources } from './sources';
 import {
@@ -37,52 +36,6 @@ function getConfig(): NewsServiceConfig {
     rssTimeoutMs: RSS_TIMEOUT_MS,
     cacheTtlMs: CACHE_TTL_MS,
     maxSnippetLength: MAX_SNIPPET_LENGTH
-  };
-}
-
-/**
- * Преобразовать RawNewsItem в NewsItem
- */
-function transformNewsItem(
-  raw: RawNewsItem,
-  sourceName: string,
-  sourceLanguage: string,
-  index: number,
-  config: NewsServiceConfig
-): NewsItem {
-  const feedItemLike: FeedItemLike = {
-    guid: raw.guid,
-    link: raw.link,
-    title: raw.title,
-    pubDate: raw.pubDate,
-    enclosure: raw.enclosure,
-    'media:content': raw['media:content'],
-    content: raw.content,
-    contentSnippet: raw.contentSnippet,
-    'content:encoded': raw['content:encoded']
-  };
-
-  const fullContent =
-    raw['content:encoded'] || raw.content || raw.contentSnippet || '';
-
-  return {
-    id: buildNewsId(sourceName, feedItemLike, index),
-    title: stripHtml(raw.title || 'Без заголовка'),
-    link: raw.link,
-    pubDate: normalizePubDate(raw.pubDate),
-    contentSnippet: stripHtml(raw.contentSnippet || fullContent).slice(
-      0,
-      config.maxSnippetLength
-    ),
-    source: sourceName,
-    language: sourceLanguage,
-    isTranslated: false,
-    content: sanitizeHtml(fullContent, {
-      allowedTags: sanitizeHtml.defaults.allowedTags.filter(tag => tag !== 'img' && tag !== 'figure' && tag !== 'figcaption'),
-      allowedAttributes: {
-        ...sanitizeHtml.defaults.allowedAttributes
-      }
-    })
   };
 }
 
@@ -118,7 +71,7 @@ async function runPipeline(
   for (const { source, rawItems } of fetchResults) {
     for (let i = 0; i < rawItems.length; i++) {
       const raw = rawItems[i];
-      const item = transformNewsItem(raw, source.name, source.language, i, config);
+      const item = transformRawToNewsItem(raw, source.name, source.language, i, config.maxSnippetLength);
       allItems.push(item);
     }
   }
