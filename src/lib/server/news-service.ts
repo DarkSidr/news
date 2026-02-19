@@ -10,6 +10,7 @@ import {
 import { createNewsSources, getActiveSources } from './sources';
 import {
   BLOCKED_DOMAINS,
+  BLOCKED_KEYWORDS,
   RSS_TIMEOUT_MS,
   CACHE_TTL_MS,
   MAX_SNIPPET_LENGTH,
@@ -96,6 +97,11 @@ async function runPipeline(
       }
     } catch {
       // Invalid URL, skip domain check
+    }
+
+    const text = `${item.title} ${item.contentSnippet} ${item.content || ''}`.toLowerCase();
+    if (BLOCKED_KEYWORDS.some((keyword) => text.includes(keyword))) {
+      return false;
     }
 
     return true;

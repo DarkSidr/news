@@ -44,7 +44,9 @@ export const BLOCKED_DOMAINS: string[] = (env.BLOCKED_DOMAINS || 'css-doodle.com
 
 export const BLOCKED_KEYWORDS: string[] = (
   env.BLOCKED_KEYWORDS ||
-  'zuckerberg,meta,facebook,instagram,whatsapp,messenger,threads,tiktok'
+  'zuckerberg,meta,facebook,instagram,whatsapp,messenger,threads,tiktok,' +
+  'ukraine,kyiv,kiev,zelensky,zelenskyy,donbass,donetsk,luhansk,mariupol,kharkiv,kherson,zaporizhzhia,' +
+  'gay,lesbian,transgender,lgbtq,lgbt,queer,bisexual'
 )
   .split(',')
   .map((k) => k.trim().toLowerCase())
