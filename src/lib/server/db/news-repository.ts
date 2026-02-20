@@ -1,5 +1,5 @@
-import { asc, desc, eq, gte, lt, sql } from 'drizzle-orm';
-import type { NewsItem } from '$lib/types';
+import { desc, eq, gte, lt, sql } from 'drizzle-orm';
+import type { NewsItem, SourceWithCount } from '$lib/types';
 import { db } from './index';
 import { articles, feedSources } from './schema';
 import { NEWS_RETENTION_DAYS, BLOCKED_KEYWORDS } from '../config';
@@ -121,45 +121,41 @@ export async function getLatestNews(): Promise<NewsItem[]> {
 
 export async function getLatestNewsPaged(
   offset: number,
-  limit: number
+  limit: number,
+  sourceName?: string | null
 ): Promise<{ items: NewsItem[]; hasMore: boolean; total: number }> {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - NEWS_RETENTION_DAYS);
 
-  // Over-fetch to compensate for rows filtered by language/keywords
-  const fetchLimit = Math.max(Math.ceil((offset + limit) * 2.5) + 50, 150);
+  const conditions = [gte(articles.pubDate, cutoffDate)];
+  if (sourceName && sourceName !== 'Все источники') {
+    conditions.push(eq(feedSources.name, sourceName));
+  }
 
-  const [rows, countRows] = await Promise.all([
-    db
-      .select({
-        id: articles.id,
-        title: articles.title,
-        translatedTitle: articles.translatedTitle,
-        link: articles.link,
-        pubDate: articles.pubDate,
-        contentSnippet: articles.contentSnippet,
-        translatedSnippet: articles.translatedSnippet,
-        content: articles.content,
-        translatedContent: articles.translatedContent,
-        source: feedSources.name,
-        language: articles.language,
-        isTranslated: articles.isTranslated
-      })
-      .from(articles)
-      .innerJoin(feedSources, eq(articles.sourceId, feedSources.id))
-      .where(gte(articles.pubDate, cutoffDate))
-      .orderBy(desc(articles.pubDate))
-      .limit(fetchLimit),
-    db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(articles)
-      .innerJoin(feedSources, eq(articles.sourceId, feedSources.id))
-      .where(gte(articles.pubDate, cutoffDate))
-  ]);
+  // Загружаем все данные для правильной фильтрации
+  const allRows = await db
+    .select({
+      id: articles.id,
+      title: articles.title,
+      translatedTitle: articles.translatedTitle,
+      link: articles.link,
+      pubDate: articles.pubDate,
+      contentSnippet: articles.contentSnippet,
+      translatedSnippet: articles.translatedSnippet,
+      content: articles.content,
+      translatedContent: articles.translatedContent,
+      source: feedSources.name,
+      language: articles.language,
+      isTranslated: articles.isTranslated
+    })
+    .from(articles)
+    .innerJoin(feedSources, eq(articles.sourceId, feedSources.id))
+    // @ts-ignore
+    .where(sql`${conditions[0]} ${conditions[1] ? sql`AND ${conditions[1]}` : sql``}`)
+    .orderBy(desc(articles.pubDate));
 
-  const total = countRows[0]?.count ?? 0;
-
-  const filtered = rows
+  // Применяем клиентскую фильтрацию (язык + ключевые слова)
+  const allFiltered = allRows
     .map((row) =>
       toNewsItem({
         id: row.id,
@@ -183,19 +179,34 @@ export async function getLatestNewsPaged(
       return !BLOCKED_KEYWORDS.some((keyword) => text.includes(keyword));
     });
 
+  // Правильная пагинация и total
+  const totalFiltered = allFiltered.length;
+  const items = allFiltered.slice(offset, offset + limit);
+  const hasMore = totalFiltered > offset + limit;
+
   return {
-    items: filtered.slice(offset, offset + limit),
-    hasMore: filtered.length > offset + limit,
-    total
+    items,
+    hasMore,
+    total: totalFiltered
   };
 }
 
-export async function getActiveSources(): Promise<string[]> {
+export async function getActiveSources(): Promise<SourceWithCount[]> {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - NEWS_RETENTION_DAYS);
+
   const rows = await db
-    .select({ name: feedSources.name })
+    .select({
+      name: feedSources.name,
+      count: sql<number>`count(${articles.id})::int`
+    })
     .from(feedSources)
-    .orderBy(asc(feedSources.name));
-  return rows.map((r) => r.name);
+    .innerJoin(articles, eq(articles.sourceId, feedSources.id))
+    .where(gte(articles.pubDate, cutoffDate))
+    .groupBy(feedSources.name)
+    .orderBy(desc(sql`count(${articles.id})`)); // Sort by count descending for better UX
+
+  return rows.map((r) => ({ name: r.name, count: r.count }));
 }
 
 export async function deleteOldNewsFromDb(): Promise<number> {

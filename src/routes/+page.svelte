@@ -1,8 +1,9 @@
 <script lang="ts">
   import type { PageData } from './$types';
-  import type { NewsItem } from '$lib/types';
+  import type { NewsItem, SourceWithCount } from '$lib/types';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import MasonryGrid from '$lib/components/MasonryGrid.svelte';
+  import ScrollToTop from '$lib/components/ScrollToTop.svelte';
 
   let { data } = $props<{ data: PageData }>();
   let now = $state(new Date());
@@ -28,7 +29,8 @@
     if (isLoadingMore || !hasMore) return;
     isLoadingMore = true;
     try {
-      const res = await fetch(`/api/news?offset=${items.length}&limit=30`);
+      const sourceQuery = selectedSource !== 'Все источники' ? `&source=${encodeURIComponent(selectedSource)}` : '';
+      const res = await fetch(`/api/news?offset=${items.length}&limit=30${sourceQuery}`);
       if (!res.ok) return;
       const body = (await res.json()) as { items: NewsItem[]; hasMore: boolean; total: number };
       const existingIds = new Set(items.map((i) => i.id));
@@ -40,22 +42,30 @@
     }
   }
 
-  const uniqueSources = $derived.by<string[]>(() => {
-    return ['Все источники', ...data.sources];
-  });
-
-  const filteredNews = $derived.by(() => {
-    if (selectedSource === 'Все источники') return items;
-    return items.filter((n: NewsItem) => n.source === selectedSource);
-  });
-
-  const selectedSourceMeta = $derived.by(() => {
-    if (selectedSource === 'Все источники') {
-      return total > 0 ? `${total} новостей` : `${items.length} новостей`;
+  async function changeSource(sourceName: string) {
+    if (selectedSource === sourceName) return;
+    selectedSource = sourceName;
+    isSourceMenuOpen = false;
+    
+    try {
+      const sourceQuery = selectedSource !== 'Все источники' ? `&source=${encodeURIComponent(selectedSource)}` : '';
+      const res = await fetch(`/api/news?offset=0&limit=30${sourceQuery}`);
+      if (!res.ok) return;
+      const body = (await res.json()) as { items: NewsItem[]; hasMore: boolean; total: number };
+      items = body.items;
+      hasMore = body.hasMore;
+      total = body.total;
+    } catch (e) {
+      console.error(e);
     }
+  }
 
-    return `${filteredNews.length} новостей`;
+  const totalNewsCount = $derived(data.sources.reduce((sum: number, s: SourceWithCount) => sum + s.count, 0));
+  const uniqueSources = $derived.by<SourceWithCount[]>(() => {
+    return [{ name: 'Все источники', count: totalNewsCount }, ...data.sources];
   });
+
+  const selectedSourceMeta = $derived(`${total > 0 ? total : items.length} новостей`);
 
   const itemListSchema = $derived({
     '@context': 'https://schema.org',
@@ -194,19 +204,19 @@
                   aria-labelledby="source-filter-label"
                 >
                   {#each uniqueSources as source}
-                    <li role="option" aria-selected={selectedSource === source}>
+                    <li role="option" aria-selected={selectedSource === source.name}>
                       <button
                         type="button"
-                        class="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm md:text-base transition-colors duration-150 {selectedSource === source
+                        class="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm md:text-base transition-colors duration-150 {selectedSource === source.name
                           ? 'bg-blue-600 text-white'
                           : 'text-slate-800 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800/80'}"
-                        onclick={() => {
-                          selectedSource = source;
-                          isSourceMenuOpen = false;
-                        }}
+                        onclick={() => changeSource(source.name)}
                       >
-                        <span class="truncate">{source}</span>
-                        {#if selectedSource === source}
+                        <span class="flex items-center gap-2 truncate">
+                          <span>{source.name}</span>
+                          <span class="text-xs opacity-70">({source.count})</span>
+                        </span>
+                        {#if selectedSource === source.name}
                           <svg
                             class="h-4 w-4 shrink-0"
                             viewBox="0 0 20 20"
@@ -232,6 +242,18 @@
         </div>
 
         <div class="flex items-center justify-between sm:justify-end gap-4">
+          <a
+            href="https://t.me/daily_dev_news"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex items-center gap-2 text-sm font-medium text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
+            aria-label="Наш Telegram канал"
+          >
+            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.415-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.892-.662 3.493-1.524 5.83-2.529 7.01-3.023 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+            </svg>
+            <span class="hidden sm:inline">Telegram</span>
+          </a>
           <div class="text-xs md:text-sm text-gray-400 dark:text-gray-500 font-mono hidden md:block" aria-live="polite">
             {updatedLabel}
           </div>
@@ -258,15 +280,26 @@
         </div>
       {:else}
         <MasonryGrid
-          items={filteredNews}
+          {items}
           {hasMore}
           {isLoadingMore}
           onLoadMore={loadMore}
         />
       {/if}
     </main>
+
+    <footer class="mt-16 border-t border-slate-200/60 dark:border-slate-800/60 pt-6 pb-8 text-center">
+      <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+        © {new Date().getFullYear()} Daily Dev News.
+        <span class="block sm:inline mt-1 sm:mt-0 sm:ml-2">
+          Заголовки иностранных статей переведены автоматически.
+        </span>
+      </p>
+    </footer>
   </div>
 </div>
+
+<ScrollToTop />
 
 <style>
   .source-menu-scroll {

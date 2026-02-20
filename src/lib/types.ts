@@ -12,3 +12,9 @@ export interface NewsItem {
   originalContentSnippet?: string;
   originalContent?: string;
 }
+
+export interface SourceWithCount {
+  name: string;
+  count: number;
+}
+

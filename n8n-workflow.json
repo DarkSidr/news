@@ -61,9 +61,19 @@
                 "operation": "notEmpty",
                 "singleValue": true
               }
+            },
+            {
+              "id": "lang-check-ru",
+              "leftValue": "={{ $json.language }}",
+              "rightValue": "ru",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "singleValue": false
+              }
             }
           ],
-          "combinator": "and"
+          "combinator": "any"
         },
         "options": {}
       },

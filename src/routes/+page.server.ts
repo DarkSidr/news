@@ -37,7 +37,15 @@ export const load: PageServerLoad = async ({ url, setHeaders, fetch }) => {
     try {
       const allNews = await fetchAllNews(fetch);
       const news = allNews.slice(0, PAGE_SIZE);
-      const sources = [...new Set(allNews.map((n) => n.source))].sort();
+      
+      const sourceCounts = allNews.reduce((acc, item) => {
+        acc[item.source] = (acc[item.source] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      const sources = Object.entries(sourceCounts)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count);
 
       return {
         news,
