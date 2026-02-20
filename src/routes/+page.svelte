@@ -144,7 +144,7 @@
         </h1>
         <p class="text-gray-500 dark:text-gray-400 mt-2 font-medium">
           Интеллектуальный агрегатор <span class="text-gray-300 dark:text-gray-600">|</span> Лента в реальном
-          времени test
+          времени
         </p>
       </div>
 

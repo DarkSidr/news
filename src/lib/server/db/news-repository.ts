@@ -194,18 +194,61 @@ export async function getActiveSources(): Promise<SourceWithCount[]> {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - NEWS_RETENTION_DAYS);
 
-  const rows = await db
+  // Получаем все новости с применением тех же фильтров, что и в getLatestNewsPaged
+  const allRows = await db
     .select({
-      name: feedSources.name,
-      count: sql<number>`count(${articles.id})::int`
+      id: articles.id,
+      title: articles.title,
+      translatedTitle: articles.translatedTitle,
+      contentSnippet: articles.contentSnippet,
+      translatedSnippet: articles.translatedSnippet,
+      content: articles.content,
+      translatedContent: articles.translatedContent,
+      source: feedSources.name,
+      language: articles.language,
+      isTranslated: articles.isTranslated,
+      link: articles.link,
+      pubDate: articles.pubDate
     })
-    .from(feedSources)
-    .innerJoin(articles, eq(articles.sourceId, feedSources.id))
-    .where(gte(articles.pubDate, cutoffDate))
-    .groupBy(feedSources.name)
-    .orderBy(desc(sql`count(${articles.id})`)); // Sort by count descending for better UX
+    .from(articles)
+    .innerJoin(feedSources, eq(articles.sourceId, feedSources.id))
+    .where(gte(articles.pubDate, cutoffDate));
 
-  return rows.map((r) => ({ name: r.name, count: r.count }));
+  // Применяем те же фильтры (язык + ключевые слова)
+  const filtered = allRows
+    .map((row) =>
+      toNewsItem({
+        id: row.id,
+        title: row.title,
+        translatedTitle: row.translatedTitle,
+        link: row.link,
+        pubDate: row.pubDate,
+        contentSnippet: row.contentSnippet,
+        translatedSnippet: row.translatedSnippet,
+        content: row.content,
+        translatedContent: row.translatedContent,
+        source: row.source,
+        language: row.language,
+        isTranslated: row.isTranslated
+      })
+    )
+    .filter((item) => {
+      if (!isAllowedNewsLanguage(item)) return false;
+      const text =
+        `${item.title} ${item.originalTitle ?? ''} ${item.contentSnippet} ${item.originalContentSnippet ?? ''} ${item.content ?? ''}`.toLowerCase();
+      return !BLOCKED_KEYWORDS.some((keyword) => text.includes(keyword));
+    });
+
+  // Подсчитываем по источникам
+  const sourceCounts = filtered.reduce((acc, item) => {
+    acc[item.source] = (acc[item.source] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Преобразуем в массив и сортируем по количеству
+  return Object.entries(sourceCounts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
 }
 
 export async function deleteOldNewsFromDb(): Promise<number> {
