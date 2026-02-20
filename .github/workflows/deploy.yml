@@ -102,10 +102,10 @@ jobs:
             set -e
             cd /srv/news
 
-            echo "==> Logging in to ghcr.io..."
-            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            echo "==> Removing stale credentials..."
+            docker logout ghcr.io 2>/dev/null || true
 
-            echo "==> Pulling new image..."
+            echo "==> Pulling new image (public)..."
             docker compose pull app
 
             echo "==> Running DB migrations..."
