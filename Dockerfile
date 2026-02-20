@@ -7,10 +7,11 @@ RUN npm ci --ignore-scripts
 # ---- Stage 2: Build ----
 FROM node:20-alpine AS builder
 WORKDIR /app
-# Build-time arg для инвалидации кеша (обновляет version.json)
-ARG BUILDTIME
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# Build-time arg для инвалидации кеша (обновляет version.json)
+ARG BUILDTIME=unknown
+RUN echo "Build time: $BUILDTIME"
 # DATABASE_URL нужен только чтобы пройти SvelteKit analyse — реальное значение подставляется в runtime
 ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
 RUN npm run build && npm prune --production
