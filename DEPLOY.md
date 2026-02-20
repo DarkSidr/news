@@ -210,3 +210,24 @@ docker compose exec postgres pg_dump -U news news > backup_$(date +%Y%m%d).sql
 # Мониторинг ресурсов
 docker stats
 ```
+
+---
+
+## Как посмотреть общую картину на сервере
+
+На одном сервере может работать несколько независимых docker-проектов.
+Чтобы быстро проверить текущее состояние, используй:
+
+```bash
+# Все compose-проекты
+docker compose ls
+
+# Все контейнеры (имя, статус, порты)
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+# Какие контейнеры подключены к общей proxy-сети
+docker network inspect proxy --format '{{range .Containers}}{{.Name}}{{println}}{{end}}'
+
+# Текущее потребление ресурсов
+docker stats --no-stream
+```
