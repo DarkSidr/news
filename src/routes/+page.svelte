@@ -14,15 +14,20 @@
   let sourceMenuRoot: HTMLDivElement | null = null;
 
   // Пагинация
+  let initialized = $state(false);
   let items = $state<NewsItem[]>([]);
   let hasMore = $state(false);
   let isLoadingMore = $state(false);
   let total = $state(0);
 
+  // Инициализация из серверных данных только один раз
   $effect(() => {
-    items = [...data.news];
-    hasMore = data.hasMore;
-    total = data.total ?? 0;
+    if (!initialized) {
+      items = data.news;
+      hasMore = data.hasMore;
+      total = data.total ?? 0;
+      initialized = true;
+    }
   });
 
   async function loadMore() {
