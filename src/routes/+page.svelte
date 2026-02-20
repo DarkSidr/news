@@ -212,9 +212,8 @@
                           : 'text-slate-800 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800/80'}"
                         onclick={() => changeSource(source.name)}
                       >
-                        <span class="flex items-center gap-2 truncate">
-                          <span>{source.name}</span>
-                          <span class="text-xs opacity-70">({source.count})</span>
+                        <span class="truncate">
+                          {source.name}
                         </span>
                         {#if selectedSource === source.name}
                           <svg

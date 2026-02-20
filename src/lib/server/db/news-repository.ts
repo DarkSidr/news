@@ -1,4 +1,4 @@
-import { desc, eq, gte, lt, sql } from 'drizzle-orm';
+import { desc, eq, gte, lt, sql, and } from 'drizzle-orm';
 import type { NewsItem, SourceWithCount } from '$lib/types';
 import { db } from './index';
 import { articles, feedSources } from './schema';
@@ -150,8 +150,7 @@ export async function getLatestNewsPaged(
     })
     .from(articles)
     .innerJoin(feedSources, eq(articles.sourceId, feedSources.id))
-    // @ts-ignore
-    .where(sql`${conditions[0]} ${conditions[1] ? sql`AND ${conditions[1]}` : sql``}`)
+    .where(conditions.length > 1 ? and(...conditions) : conditions[0])
     .orderBy(desc(articles.pubDate));
 
   // Применяем клиентскую фильтрацию (язык + ключевые слова)
