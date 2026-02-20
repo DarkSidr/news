@@ -47,6 +47,7 @@ import { fade } from 'svelte/transition';
   let colHeights: number[] = [];
   let knownItemsLen = 0;
   let knownNumCols = 0;
+  let knownFirstId = '';
 
   function estimateHeight(item: NewsItem): number {
     return (item.title.length * 1.5) + (item.contentSnippet?.length ?? 0) + 100;
@@ -83,20 +84,27 @@ import { fade } from 'svelte/transition';
     const n = numCols;
     const len = items.length;
     const snapshot = items;
+    const firstId = snapshot[0]?.id ?? '';
+
+    // Проверяем изменение содержимого по первому элементу
+    const contentChanged = firstId !== knownFirstId && firstId !== '';
 
     if (n !== knownNumCols) {
       // Число колонок изменилось — пересчитываем всё
       rebuildAll(snapshot, n);
       knownNumCols = n;
       knownItemsLen = len;
+      knownFirstId = firstId;
+    } else if (len < knownItemsLen || len === 0 || contentChanged) {
+      // items сбросились (новый фильтр / смена данных) — пересчитываем всё
+      rebuildAll(snapshot, n);
+      knownItemsLen = len;
+      knownFirstId = firstId;
     } else if (len > knownItemsLen) {
       // Подгрузились новые items — добавляем только их, не трогая существующие
       appendItems(snapshot.slice(knownItemsLen));
       knownItemsLen = len;
-    } else if (len < knownItemsLen || len === 0) {
-      // items сбросились (новый фильтр / смена данных) — пересчитываем всё
-      rebuildAll(snapshot, n);
-      knownItemsLen = len;
+      knownFirstId = firstId;
     }
   });
 </script>
