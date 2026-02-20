@@ -7,6 +7,8 @@ RUN npm ci --ignore-scripts
 # ---- Stage 2: Build ----
 FROM node:20-alpine AS builder
 WORKDIR /app
+# Build-time arg для инвалидации кеша (обновляет version.json)
+ARG BUILDTIME
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # DATABASE_URL нужен только чтобы пройти SvelteKit analyse — реальное значение подставляется в runtime
