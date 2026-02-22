@@ -338,8 +338,8 @@ PUBLIC_SENTRY_DSN=https://...@sentry.io/...
 - **Причина:** минимум кликов до контента, нет проблем с авторскими правами
 
 ### 2. Только RSS (no paid APIs)
-- Источники: Habr, HackerNews, OpenNET, Phoronix, The Verge
-- NewsData и ArXiv удалены в Stage 7 (платные/freemium)
+- Источники: Habr, HackerNews, OpenNET, Phoronix, Ars Technica, и другие качественные RSS-фиды
+- NewsData, ArXiv, Wired, The Verge удалены в Stage 7 (платные/freemium/низкое качество)
 - **Причина:** стабильность, независимость от API ключей
 
 ### 3. AI-перевод (Cloudflare Workers AI)

@@ -13,7 +13,7 @@
 
 ## Источники новостей
 
-OpenNET, Habr, HackerNews, Phoronix, TechCrunch AI, Google Web.dev, MDN Blog, Microsoft TypeScript, CNCF Blog, The Verge, Wired, Ars Technica, Dev.to, React, GitHub Blog, OpenAI, PostgreSQL
+OpenNET, Habr, HackerNews, Phoronix, TechCrunch AI, Google Web.dev, MDN Blog, Microsoft TypeScript, CNCF Blog, Ars Technica, Dev.to, React, GitHub Blog, OpenAI, PostgreSQL
 
 ## Разработка
 

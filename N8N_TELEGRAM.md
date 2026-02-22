@@ -178,10 +178,9 @@ url      TEXT
 language VARCHAR(10)
 ```
 
-### Источники новостей (17 штук)
+### Источники новостей
 OpenNET, Habr, HackerNews, Phoronix, TechCrunch AI, Google Web.dev,
-MDN Blog, Microsoft TypeScript, CNCF Blog, The Verge, Wired,
-Ars Technica, Dev.to, React, GitHub Blog, OpenAI, PostgreSQL
+MDN Blog, Microsoft TypeScript, CNCF Blog, Ars Technica, Dev.to, React, GitHub Blog, OpenAI, PostgreSQL
 
 ### Cron endpoint (ручной запуск сбора)
 ```bash
