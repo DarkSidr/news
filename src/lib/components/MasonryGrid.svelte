@@ -3,11 +3,12 @@ import type { NewsItem } from '$lib/types';
 import NewsCard from '$lib/components/NewsCard.svelte';
 import { fade } from 'svelte/transition';
 
-  let { items, hasMore = false, isLoadingMore = false, onLoadMore } = $props<{
+  let { items, hasMore = false, isLoadingMore = false, onLoadMore, now = new Date() } = $props<{
     items: NewsItem[];
     hasMore?: boolean;
     isLoadingMore?: boolean;
     onLoadMore?: () => void;
+    now?: Date;
   }>();
 
   let innerWidth = $state(0);
@@ -116,7 +117,7 @@ import { fade } from 'svelte/transition';
     <div class="flex flex-col gap-6">
         {#each column as item (item.id)}
             <div in:fade={{ duration: 300 }}>
-                <NewsCard news={item} />
+                <NewsCard news={item} {now} />
             </div>
         {/each}
     </div>

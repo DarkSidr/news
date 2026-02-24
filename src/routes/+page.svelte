@@ -30,6 +30,8 @@
     }
   });
 
+  const POLL_INTERVAL = 120_000; // 2 минуты
+
   async function loadMore() {
     if (isLoadingMore || !hasMore) return;
     isLoadingMore = true;
@@ -45,6 +47,35 @@
     } finally {
       isLoadingMore = false;
     }
+  }
+
+  let newItemsCount = $state(0);
+  let pendingNewItems = $state<NewsItem[]>([]);
+
+  async function pollNewItems() {
+    try {
+      const sourceQuery = selectedSource !== 'Все источники' ? `&source=${encodeURIComponent(selectedSource)}` : '';
+      const res = await fetch(`/api/news?offset=0&limit=30${sourceQuery}`);
+      if (!res.ok) return;
+      const body = (await res.json()) as { items: NewsItem[]; hasMore: boolean; total: number };
+      const existingIds = new Set(items.map((i) => i.id));
+      const freshItems = body.items.filter((i) => !existingIds.has(i.id));
+      if (freshItems.length > 0) {
+        pendingNewItems = freshItems;
+        newItemsCount = freshItems.length;
+      }
+    } catch {
+      // Тихо игнорируем ошибки polling
+    }
+  }
+
+  function showNewItems() {
+    if (pendingNewItems.length === 0) return;
+    items = [...pendingNewItems, ...items];
+    total += pendingNewItems.length;
+    pendingNewItems = [];
+    newItemsCount = 0;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function changeSource(sourceName: string) {
@@ -93,6 +124,8 @@
       now = new Date();
     }, 1000);
 
+    const pollTimer = setInterval(pollNewItems, POLL_INTERVAL);
+
     const handleDocumentPointerDown = (event: MouseEvent) => {
       const target = event.target;
       if (!(target instanceof Node) || !sourceMenuRoot) {
@@ -115,6 +148,7 @@
 
     return () => {
       clearInterval(timer);
+      clearInterval(pollTimer);
       document.removeEventListener('mousedown', handleDocumentPointerDown);
       document.removeEventListener('keydown', handleDocumentKeydown);
     };
@@ -271,6 +305,15 @@
       class="w-full transition-opacity duration-500 {isLoaded ? 'opacity-100' : 'opacity-0'}"
       aria-label="Лента новостей"
     >
+      {#if newItemsCount > 0}
+        <button
+          type="button"
+          class="w-full mb-6 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors shadow-lg shadow-blue-500/25 cursor-pointer"
+          onclick={showNewItems}
+        >
+          {newItemsCount} {newItemsCount === 1 ? 'новая новость' : newItemsCount < 5 ? 'новые новости' : 'новых новостей'}  — нажмите, чтобы показать
+        </button>
+      {/if}
       {#if data.isFallback}
         <div class="col-span-full mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 rounded-lg border border-yellow-200 dark:border-yellow-700 text-center text-sm">
           ⚠️ База данных временно недоступна. Показана резервная лента (RSS).
@@ -288,6 +331,7 @@
           {hasMore}
           {isLoadingMore}
           onLoadMore={loadMore}
+          {now}
         />
       {/if}
     </main>

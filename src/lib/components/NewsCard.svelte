@@ -1,13 +1,13 @@
 <script lang="ts">
   import type { NewsItem } from '$lib/types';
-  import { formatDistanceToNow } from 'date-fns';
+  import { formatDistance } from 'date-fns';
   import { ru } from 'date-fns/locale';
   import { ExternalLink } from 'lucide-svelte';
 
-  let { news } = $props<{ news: NewsItem }>();
+  let { news, now } = $props<{ news: NewsItem; now: Date }>();
 
   let timeAgo = $derived(
-    formatDistanceToNow(new Date(news.pubDate), { addSuffix: true, locale: ru })
+    formatDistance(new Date(news.pubDate), now, { addSuffix: true, locale: ru })
   );
   let languageFlag = $derived(news.isTranslated ? '🇬🇧→🇷🇺' : news.language === 'ru' ? '🇷🇺' : '🇬🇧');
   let languageLabel = $derived(news.isTranslated ? 'Доступен перевод' : 'Оригинал');
