@@ -171,4 +171,14 @@ describe('isAllowedNewsLanguage', () => {
       })
     ).toBe(false);
   });
+
+  it('blocks myanmar script even with latin words mixed in', () => {
+    expect(
+      isAllowedNewsLanguage({
+        title: 'array က ram ပေါ်မှာ ဒေတာ တွေ ဘယ်လို သိမ်းလဲ?',
+        contentSnippet: 'ram ဆိုတာ ယာယီ javascript မှာ int အဆင့် 8 bytes',
+        content: undefined
+      })
+    ).toBe(false);
+  });
 });

@@ -5,7 +5,7 @@ import type { NewsItem } from '$lib/types';
 const FALLBACK_PUB_DATE_ISO = new Date(0).toISOString();
 const ALLOWED_SCRIPT_REGEX = /[\p{Script=Latin}\p{Script=Cyrillic}]/u;
 const DISALLOWED_SCRIPT_REGEX =
-  /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Thai}\p{Script=Arabic}\p{Script=Hebrew}\p{Script=Devanagari}\p{Script=Bengali}\p{Script=Tamil}\p{Script=Telugu}\p{Script=Gujarati}\p{Script=Gurmukhi}\p{Script=Georgian}\p{Script=Armenian}]/u;
+  /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Thai}\p{Script=Arabic}\p{Script=Hebrew}\p{Script=Devanagari}\p{Script=Bengali}\p{Script=Tamil}\p{Script=Telugu}\p{Script=Gujarati}\p{Script=Gurmukhi}\p{Script=Georgian}\p{Script=Armenian}\p{Script=Myanmar}\p{Script=Lao}\p{Script=Khmer}\p{Script=Sinhala}\p{Script=Ethiopic}]/u;
 
 export type FeedItemLike = {
   guid?: string;
