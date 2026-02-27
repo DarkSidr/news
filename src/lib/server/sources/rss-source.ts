@@ -121,6 +121,9 @@ export const DEFAULT_RSS_FEEDS: RssSource[] = [
   new RssSource('HackerNews', 'https://news.ycombinator.com/rss', {
     language: 'en'
   }),
+  new RssSource('HackerNoon', 'https://hackernoon.com/feed', {
+    language: 'en'
+  }),
   new RssSource('Phoronix', 'https://www.phoronix.com/rss.php', {
     language: 'en'
   }),
